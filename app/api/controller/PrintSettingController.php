@@ -58,7 +58,8 @@ class PrintSettingController extends BaseController
     {
         //pdf\docx生成预览图
 //        $file = $this->request->file('file');
-        $file = (new DocumentToImage)->convertToImages('public/uploads/众联加油小程序端操作文档(1).docx');
+        // $file = (new DocumentToImage)->convertToImages('public/uploads/众联加油小程序端操作文档(1).pdf');
+        $file = (new DocumentToImage)->convertToImages('public/uploads/众联加油小程序端操作文档.docx');
         d($file);
     }
 

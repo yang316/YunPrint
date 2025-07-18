@@ -114,7 +114,13 @@ class DocumentToImage
         try {
             // 设置分辨率
             $imagick->setResolution($options['dpi'], $options['dpi']);
-
+            
+            // 设置渲染质量
+            $imagick->setImageAlphaChannel(\Imagick::ALPHACHANNEL_ACTIVATE);
+            $imagick->setImageBackgroundColor('white');
+            $imagick->setImageCompressionQuality(100);
+            $imagick->setImageCompression(\Imagick::COMPRESSION_LOSSLESS);
+            
             // 读取 PDF
             $imagick->readImage($filePath);
 
@@ -183,7 +189,6 @@ class DocumentToImage
                     'images' => $results
                 ]
             ];
-
         } catch (\Exception $e) {
             $imagick->clear();
             $imagick->destroy();
@@ -209,10 +214,12 @@ class DocumentToImage
             $outputPath = $this->outputDir . $filename;
 
             $device = $options['format'] === 'png' ? 'png16m' : 'jpeg';
+            $quality = $options['format'] === 'jpg' ? '-dJPEGQ=' . $options['quality'] : '';
             $command = sprintf(
-                'gs -dNOPAUSE -dBATCH -dSAFER -sDEVICE=%s -r%d -dFirstPage=%d -dLastPage=%d -sOutputFile=%s %s 2>&1',
+                'gs -dNOPAUSE -dBATCH -dSAFER -sDEVICE=%s -r%d -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -dUseCIEColor=true %s -dFirstPage=%d -dLastPage=%d -sOutputFile=%s %s 2>&1',
                 $device,
                 $options['dpi'],
+                $quality,
                 $pageNum,
                 $pageNum,
                 escapeshellarg($outputPath),
@@ -338,18 +345,212 @@ class DocumentToImage
         }
     }
 
+    // /**
+    //  * DOC/DOCX 转 PDF
+    //  */
+    // private function convertDocToPdf($filePath)
+    // {
+    //     $pdfPath = $this->tempDir . '/' . uniqid() . '.pdf';
+
+    //     // 方案1: LibreOffice
+    //     if ($this->commandExists('libreoffice')) {
+    //         $command = sprintf(
+    //             'libreoffice --headless --convert-to pdf --outdir %s %s 2>&1',
+    //             escapeshellarg(dirname($pdfPath)),
+    //             escapeshellarg($filePath)
+    //         );
+
+    //         $output = [];
+    //         $returnCode = 0;
+    //         exec($command, $output, $returnCode);
+
+    //         $originalName = pathinfo($filePath, PATHINFO_FILENAME);
+    //         $generatedPdf = dirname($pdfPath) . '/' . $originalName . '.pdf';
+
+    //         if (file_exists($generatedPdf)) {
+    //             rename($generatedPdf, $pdfPath);
+    //             return $pdfPath;
+    //         }
+    //     }
+
+    //     // 方案2: unoconv
+    //     if ($this->commandExists('unoconv')) {
+    //         $command = sprintf(
+    //             'unoconv -f pdf -o %s %s 2>&1',
+    //             escapeshellarg($pdfPath),
+    //             escapeshellarg($filePath)
+    //         );
+    //         $output = [];
+    //         $returnCode = 0;
+    //         exec($command, $output, $returnCode);
+    //         var_dump($output);
+    //         var_dump($returnCode);
+    //         if ($returnCode === 0 && file_exists($pdfPath)) {
+    //             return $pdfPath;
+    //         }
+    //     }
+
+    //     throw new \Exception('无法转换 DOC 文件，请安装 LibreOffice 或 unoconv');
+    // }
+
+
     /**
      * DOC/DOCX 转 PDF
+     * 
+     * @param string $filePath 源文档文件路径
+     * @return string 转换后的PDF文件路径
+     * @throws \Exception 转换失败时抛出异常
      */
     private function convertDocToPdf($filePath)
     {
-        $pdfPath = $this->tempDir . '/' . uniqid() . '.pdf';
+        // 验证源文件
+        if (!file_exists($filePath) || !is_readable($filePath)) {
+            throw new \Exception('源文件不存在或不可读: ' . $filePath);
+        }
 
-        // 方案1: LibreOffice
+        // 确保临时目录存在
+        if (!is_dir($this->tempDir) && !mkdir($this->tempDir, 0755, true)) {
+            throw new \Exception('无法创建临时目录: ' . $this->tempDir);
+        }
+
+        // 创建唯一的PDF输出路径
+        $pdfPath = $this->tempDir . '/' . uniqid('doc_', true) . '.pdf';
+
+        // 处理中文文件名问题 - 创建ASCII名称的临时副本
+        $tempFilePath = $this->createAsciiTempFile($filePath);
+
+        $conversionSuccess = false;
+        $conversionLog = [];
+
+        try {
+            // 方案1: 使用LibreOffice转换
+            if (!$conversionSuccess && $this->commandExists('libreoffice')) {
+                $conversionLog[] = "尝试使用LibreOffice转换...";
+
+                $outDir = dirname($pdfPath);
+                $tempFileName = pathinfo($tempFilePath, PATHINFO_FILENAME);
+                $expectedOutput = $outDir . '/' . $tempFileName . '.pdf';
+
+                $command = sprintf(
+                    'timeout 180 libreoffice --headless --convert-to "pdf:writer_pdf_Export:EmbedStandardFonts=true;EmbedFonts=true;ExportNotes=false;UseReferenceXObject=false;ExportFormFields=false;FormsType=0;ReduceImageResolution=false;UseLosslessCompression=true;Quality=100;TextAndLineArt=3" --outdir %s %s 2>&1',
+                    escapeshellarg($outDir),
+                    escapeshellarg($tempFilePath)
+                );
+
+                $output = [];
+                $returnCode = 0;
+                exec($command, $output, $returnCode);
+
+                $conversionLog[] = "LibreOffice命令: " . $command;
+                $conversionLog[] = "返回代码: " . $returnCode;
+                $conversionLog[] = "输出: " . implode("\n", $output);
+
+                // LibreOffice生成的PDF文件名基于输入文件名
+                if ($returnCode === 0 && file_exists($expectedOutput)) {
+                    if (rename($expectedOutput, $pdfPath)) {
+                        $conversionSuccess = true;
+                        $conversionLog[] = "使用LibreOffice转换成功";
+                    } else {
+                        $conversionLog[] = "无法重命名生成的PDF文件";
+                    }
+                } else {
+                    $conversionLog[] = "LibreOffice转换失败";
+                }
+            }
+
+            // 方案2: 使用unoconv转换
+            if (!$conversionSuccess && $this->commandExists('unoconv')) {
+                $conversionLog[] = "尝试使用unoconv转换...";
+
+                // 在同一目录下生成输出文件以避免路径问题
+                $tempOutputPath = dirname($tempFilePath) . '/output.pdf';
+
+                $command = sprintf(
+                    'cd %s && timeout 180 unoconv -f pdf -e "EmbedStandardFonts=true;EmbedFonts=true;ExportNotes=false;UseReferenceXObject=false;ExportFormFields=false;FormsType=0;ReduceImageResolution=false;UseLosslessCompression=true;Quality=100;TextAndLineArt=3" -o %s %s 2>&1',
+                    escapeshellarg(dirname($tempFilePath)),
+                    escapeshellarg(basename($tempOutputPath)),
+                    escapeshellarg(basename($tempFilePath))
+                );
+
+                $output = [];
+                $returnCode = 0;
+                exec($command, $output, $returnCode);
+
+                $conversionLog[] = "unoconv命令: " . $command;
+                $conversionLog[] = "返回代码: " . $returnCode;
+                $conversionLog[] = "输出: " . implode("\n", $output);
+
+                if ($returnCode === 0 && file_exists($tempOutputPath)) {
+                    if (rename($tempOutputPath, $pdfPath)) {
+                        $conversionSuccess = true;
+                        $conversionLog[] = "使用unoconv转换成功";
+                    } else {
+                        $conversionLog[] = "无法重命名生成的PDF文件";
+                    }
+                } else {
+                    $conversionLog[] = "unoconv转换失败";
+                }
+            }
+
+            // 如果上述方法都失败，尝试方案3：使用PDF字体后处理
+            if (!$conversionSuccess && $this->commandExists('gs')) {
+                $tempOutputPath = $this->tempDir . '/' . uniqid('gs_', true) . '.pdf';
+
+                // 先使用基本的LibreOffice转换
+                $basicConversion = $this->basicDocToPdfConversion($tempFilePath);
+
+                if ($basicConversion) {
+                    // 使用Ghostscript处理字体嵌入和渲染问题
+                    $command = sprintf(
+                        'gs -sDEVICE=pdfwrite -dPDFSETTINGS=/prepress -dCompatibilityLevel=1.7 -dNOPAUSE -dQUIET -dBATCH -dSubsetFonts=true -dEmbedAllFonts=true -dPrinted=false -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -dUseCIEColor=true -dUseFastColor=false -dHaveTransparency=true -dLossless=true -dMaxSubsetPct=100 -sOutputFile=%s %s 2>&1',
+                        escapeshellarg($tempOutputPath),
+                        escapeshellarg($basicConversion)
+                    );
+
+                    $output = [];
+                    $returnCode = 0;
+                    exec($command, $output, $returnCode);
+
+                    if ($returnCode === 0 && file_exists($tempOutputPath)) {
+                        if (rename($tempOutputPath, $pdfPath)) {
+                            $conversionSuccess = true;
+                            unlink($basicConversion); // 删除中间PDF
+                        }
+                    }
+                }
+            }
+            // 如果两种方法都失败了
+            if (!$conversionSuccess) {
+                $logDetails = implode("\n", $conversionLog);
+                throw new \Exception('无法转换DOC文件，请确保LibreOffice或unoconv已正确安装。');
+            }
+
+            return $pdfPath;
+        } finally {
+            // 清理临时文件
+            if (file_exists($tempFilePath)) {
+                unlink($tempFilePath);
+            }
+
+            // 如果转换失败，清理可能创建的部分PDF文件
+            if (!$conversionSuccess && file_exists($pdfPath)) {
+                unlink($pdfPath);
+            }
+        }
+    }
+
+
+    /**
+     * 基本的文档到PDF转换（作为后处理的第一步）
+     */
+    private function basicDocToPdfConversion($filePath)
+    {
+        $outPath = $this->tempDir . '/' . uniqid('basic_', true) . '.pdf';
+
         if ($this->commandExists('libreoffice')) {
             $command = sprintf(
-                'libreoffice --headless --convert-to pdf --outdir %s %s 2>&1',
-                escapeshellarg(dirname($pdfPath)),
+                'libreoffice --headless --convert-to "pdf:writer_pdf_Export:EmbedStandardFonts=true;EmbedFonts=true;ExportNotes=false;UseReferenceXObject=false;ExportFormFields=false;FormsType=0;ReduceImageResolution=false;UseLosslessCompression=true;Quality=100;TextAndLineArt=3" --outdir %s %s 2>&1',
+                escapeshellarg(dirname($outPath)),
                 escapeshellarg($filePath)
             );
 
@@ -357,34 +558,38 @@ class DocumentToImage
             $returnCode = 0;
             exec($command, $output, $returnCode);
 
-            $originalName = pathinfo($filePath, PATHINFO_FILENAME);
-            $generatedPdf = dirname($pdfPath) . '/' . $originalName . '.pdf';
+            $generatedPdf = dirname($outPath) . '/' . pathinfo($filePath, PATHINFO_FILENAME) . '.pdf';
 
-            if (file_exists($generatedPdf)) {
-                rename($generatedPdf, $pdfPath);
-                return $pdfPath;
+            if ($returnCode === 0 && file_exists($generatedPdf)) {
+                rename($generatedPdf, $outPath);
+                return $outPath;
             }
         }
 
-        // 方案2: unoconv
-        if ($this->commandExists('unoconv')) {
-            $command = sprintf(
-                'unoconv -f pdf -o %s %s 2>&1',
-                escapeshellarg($pdfPath),
-                escapeshellarg($filePath)
-            );
-
-            $output = [];
-            $returnCode = 0;
-            exec($command, $output, $returnCode);
-
-            if ($returnCode === 0 && file_exists($pdfPath)) {
-                return $pdfPath;
-            }
-        }
-
-        throw new \Exception('无法转换 DOC 文件，请安装 LibreOffice 或 unoconv');
+        return null;
     }
+
+
+
+    /**
+     * 创建具有ASCII文件名的临时文件副本
+     * 
+     * @param string $originalFilePath 原始文件路径
+     * @return string 临时文件路径
+     * @throws \Exception 创建临时文件失败时抛出异常
+     */
+    private function createAsciiTempFile($originalFilePath)
+    {
+        $extension = pathinfo($originalFilePath, PATHINFO_EXTENSION);
+        $tempFile = tempnam(sys_get_temp_dir(), 'doc_') . '.' . $extension;
+
+        if (!copy($originalFilePath, $tempFile)) {
+            throw new \Exception('无法创建文件的临时副本');
+        }
+
+        return $tempFile;
+    }
+
 
     /**
      * 解析页数参数
@@ -396,7 +601,7 @@ class DocumentToImage
         }
 
         if (is_array($pages)) {
-            return array_filter($pages, function($page) use ($totalPages) {
+            return array_filter($pages, function ($page) use ($totalPages) {
                 return $page >= 1 && $page <= $totalPages;
             });
         }
