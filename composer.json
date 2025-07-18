@@ -27,7 +27,8 @@
     "php": ">=8.1",
     "workerman/webman-framework": "^2.1",
     "monolog/monolog": "^2.0",
-    "saithink/saiadmin": "^5.0"
+    "saithink/saiadmin": "^5.0",
+    "next/var-dumper": "^0.1.1"
   },
   "suggest": {
     "ext-event": "For better performance. "

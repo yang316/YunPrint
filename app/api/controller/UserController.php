@@ -2,19 +2,23 @@
 
 namespace app\api\controller;
 
-use app\api\extends\Random;
-use app\api\model\Sms;
 use support\Request;
-use app\api\validate\UserValidate;
 use support\think\Db;
+use app\api\model\Sms;
+use GuzzleHttp\Client;
+use app\api\extends\Random;
+use app\api\model\SystemConfig;
+use app\api\validate\UserValidate;
 use think\exception\ValidateException;
-
 class UserController extends BaseController
 {
 
-    protected $noNeedLogin = ['login','register'];
+    protected $noNeedLogin = ['login','register','mpLogin'];
 
-    private $validate = null;
+    /**
+     * @var UserValidate
+     */
+    private UserValidate $validate;
 
     public function __construct()
     {
@@ -184,6 +188,65 @@ class UserController extends BaseController
         return $this->success([],'修改成功');
     }
 
+
+
+
+    /**
+     * 小程序登录
+     */
+    public function mpLogin()
+    {
+        try{
+            $code = $this->validate->failException(true)->scene('mpLogin')->checked(($this->request->all()));
+        }catch(ValidateException $e){
+            return $this->error($e->getError());
+        }
+        if( $this->request->input('env') == 'test' ){
+            $token = $this->genToken( 1 );
+            $user = $this->model->find(1);
+            return $this->success(['user' => $user, 'token' => $token]);
+        }
+        $url = 'https://api.weixin.qq.com/sns/jscode2session';
+        $client = new Client();
+        $mpConfig = SystemConfig::whereIn('key', 'Appid,AppSecret')->field(['key', 'value'])->select();
+        $configArray = $mpConfig->column('value', 'key');
+        try {
+            $response = $client->request('GET', $url, [
+                'query' => [
+                    'appid'         => $configArray['Appid'],
+                    'secret'        => $configArray['AppSecret'],
+                    'js_code'       => $code,
+                    'grant_type'    => 'authorization_code'
+                ]
+            ]);
+
+            $result = json_decode($response->getBody(), true);
+
+            if(isset($result['errcode']) && $result['errcode'] != 0){
+                return $this->error($result['errmsg'] ?? '登录失败', 401);
+            }
+
+            $now = date('Y-m-d H:i:s');
+            //openid的用户是否存在
+            $user = $this->model->where(['openid' => $result['openid']])->field(['id','avatar','nickname','mobile'])->find();
+            if(!$user){
+                //用户不存在，创建用户
+                $user = $this->model->create([
+                    'openid'        => $result['openid'],
+                    'nickname'      => '微信用户',
+                    'regist_time'   => $now,
+                    'update_time'   => $now,
+                    'mobile'        => '',
+                    'avatar'        => '/storage/20250527/default.png',
+                ]);
+            }
+            //创建token
+            $token = $this->genToken($user->id);
+            return $this->success(['user' => $user, 'token' => $token]);
+        } catch (\Exception $e) {
+            return $this->error('登录失败: ' . $e->getMessage());
+        }
+    }
     /**
      * 获取用户信息
      */

@@ -1,6 +1,7 @@
 <?php
 use Webman\Route;
 use app\api\controller\UserController;
+use app\api\controller\PrintSettingController;
 
 Route::group('/api', function () {
 
@@ -18,8 +19,16 @@ Route::group('/api', function () {
         Route::put('/changePassword',[UserController::class,'changePassword']);
         //修改用户信息
         Route::put('/editProfile',[UserController::class,'editProfile']);
+        //小程序
+        Route::post('/mpLogin',[UserController::class,'mpLogin']);
     });
 
+    //打印设置
+    Route::group('/printSetting',function (){
+        Route::get('/getPrintSetting',[PrintSettingController::class,'getPrintSetting']);
+        //生成预览
+        Route::get('/genPreview',[PrintSettingController::class,'genPreview']);
+    });
 })->middleware([\app\api\middleware\Authorize::class]);
 
 

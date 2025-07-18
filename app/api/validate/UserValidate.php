@@ -16,6 +16,8 @@ class UserValidate extends Validate
         'age'               =>'require|number|between:1,120',
         'gender'            =>'require|in:0,1,2',
         'avatar'            =>'require',
+        'platform'          =>'require|in:mp,qq',
+        'code'              =>'require',
     ];
 
     protected $message = [
@@ -36,12 +38,14 @@ class UserValidate extends Validate
         'gender.require'    => '性别不能为空',  
         'gender.in'         => '性别参数不正确',
         'avatar.require'    => '头像不能为空',
+        'code.require'      => 'code不能为空',
     ];
 
     protected $scene = [
         'register'          => ['mobile','password'],
         'changePassword'    => ['mobile','type','oldPassword','password'],
         'editProfile'       => ['nickname','age','gender','avatar'],
+        'mpLogin'           => ['code'],
     ];
 
     // 自定义验证规则

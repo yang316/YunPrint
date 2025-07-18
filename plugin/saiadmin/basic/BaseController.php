@@ -74,7 +74,7 @@ class BaseController extends OpenController
             'save' => 'post',
             'update' => 'put',
             'read' => 'get',
-            'changestatus' => 'post',
+            'changeStatus' => 'post',
             'destroy' => 'delete',
             'import' => 'post',
             'export' => 'post',
@@ -180,6 +180,27 @@ class BaseController extends OpenController
             return $this->success($data);
         } else {
             return $this->fail('未查找到信息');
+        }
+    }
+
+
+    /**
+     * 修改状态
+     * @param Request $request
+     * @return Response
+     */
+    public function changeStatus(Request $request): Response
+    {
+        $id = $request->input('id', 0);
+        $status = $request->input('status', 0);
+        if (empty($id)) {
+            return $this->fail('参数错误，请检查');
+        }
+        $result = $this->logic->edit($id, ['status'=>$status]);
+        if ($result) {
+            return $this->success([],'操作成功');
+        } else {
+            return $this->fail('操作失败');
         }
     }
 

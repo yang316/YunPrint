@@ -3,6 +3,7 @@
 namespace app\api\controller;
 
 use app\api\model\Token;
+use support\Log;
 class BaseController
 {
     /**
@@ -26,7 +27,6 @@ class BaseController
             $modelName = str_replace('Controller', '', $className);
             // 构建模型的完整命名空间
             $modelClass = "\\app\\api\\model\\{$modelName}";
-
             // 检查模型类是否存在，如果存在则实例化
             if (class_exists($modelClass)) {
                 try {
@@ -34,7 +34,7 @@ class BaseController
                 } catch (\Exception $e) {
                     // 记录错误但不中断执行
                     // 可以添加日志记录
-                    var_dump("模型实例化失败: " . $e->getMessage());
+                    Log::error("模型实例化失败: " . $e->getMessage());
                 }
             }
         }
@@ -46,7 +46,6 @@ class BaseController
      * @param $msg
      * @param $data
      * @param $status
-     * @param $headers
      */
     public function response($code = 200, $msg = '', $data = [],$status=200,$headers=[])
     {
@@ -58,8 +57,7 @@ class BaseController
      * @param $data
      * @param $msg
      * @param $code
-     * @param $status
-     * @param $headers
+
      */
     public function success($data=[],$msg='success',$code=200)
     {
@@ -70,8 +68,6 @@ class BaseController
      * @param $data
      * @param $msg
      * @param $code
-     * @param $status
-     * @param $headers
      */
     public function error($msg='操作失败',$data=[],$code=400)
     {
