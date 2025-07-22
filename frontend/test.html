@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分片上传测试页面</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#64748b',
+                        success: '#10b981',
+                        error: '#ef4444',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .progress-bar {
+                transition: width 0.3s ease;
+            }
+            .upload-container {
+                @apply max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg;
+            }
+            .btn {
+                @apply px-4 py-2 rounded-md font-medium transition-all duration-200;
+            }
+            .btn-primary {
+                @apply bg-primary text-white hover:bg-primary/90 focus:ring-2 focus:ring-primary/50;
+            }
+            .btn-disabled {
+                @apply bg-gray-300 text-gray-500 cursor-not-allowed;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="upload-container">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">分片上传测试</h1>
+        
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">选择文件</label>
+            <div class="relative">
+                <input type="file" id="fileInput" class="hidden" accept="*">
+                <button id="selectFileBtn" class="btn btn-primary w-full flex items-center justify-center">
+                    <i class="fa fa-file-o mr-2"></i> 选择文件
+                </button>
+            </div>
+            <div id="fileInfo" class="mt-2 text-sm text-gray-600 hidden">
+                <span id="fileName"></span>
+                <span id="fileSize" class="ml-2 text-gray-500"></span>
+            </div>
+        </div>
+        
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                分片大小设置
+                <span class="text-xs text-gray-500 ml-1">(默认 1MB)</span>
+            </label>
+            <div class="flex items-center">
+                <input type="number" id="chunkSize" value="1" min="0.1" step="0.1" 
+                       class="w-20 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+                <span class="ml-2 text-gray-700">MB</span>
+            </div>
+        </div>
+        
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">接口配置</label>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">上传URL</label>
+                    <input type="text" id="uploadUrl" value="http://your-api-domain.com/common/upload" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">UUID/字段</label>
+                    <input type="text" id="uuidField" value="" placeholder="请输入接口所需的UUID/字段值" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-6">
+            <button id="uploadBtn" class="btn btn-primary w-full flex items-center justify-center" disabled>
+                <i class="fa fa-cloud-upload mr-2"></i> 开始上传
+            </button>
+        </div>
+        
+        <div id="uploadProgress" class="mb-6 hidden">
+            <div class="flex justify-between text-sm mb-1">
+                <span class="text-gray-700">上传进度</span>
+                <span id="progressPercentage" class="text-primary font-medium">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div id="progressBar" class="bg-primary h-2.5 rounded-full progress-bar" style="width: 0%"></div>
+            </div>
+            <div id="uploadStatus" class="mt-2 text-sm text-gray-600"></div>
+        </div>
+        
+        <div id="uploadResult" class="mt-6 p-4 rounded-md hidden"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM元素
+            const fileInput = document.getElementById('fileInput');
+            const selectFileBtn = document.getElementById('selectFileBtn');
+            const fileInfo = document.getElementById('fileInfo');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const uploadProgress = document.getElementById('uploadProgress');
+            const progressBar = document.getElementById('progressBar');
+            const progressPercentage = document.getElementById('progressPercentage');
+            const uploadStatus = document.getElementById('uploadStatus');
+            const uploadResult = document.getElementById('uploadResult');
+            const chunkSizeInput = document.getElementById('chunkSize');
+            const uploadUrlInput = document.getElementById('uploadUrl');
+            const uuidFieldInput = document.getElementById('uuidField');
+            
+            // 全局变量
+            let selectedFile = null;
+            let totalChunks = 0;
+            let currentChunkIndex = 0;
+            let uploadStartTime = 0;
+            
+            // 选择文件
+            selectFileBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    selectedFile = e.target.files[0];
+                    fileName.textContent = selectedFile.name;
+                    fileSize.textContent = formatFileSize(selectedFile.size);
+                    fileInfo.classList.remove('hidden');
+                    uploadBtn.disabled = false;
+                    uploadBtn.classList.remove('btn-disabled');
+                    uploadResult.classList.add('hidden');
+                }
+            });
+            
+            // 开始上传
+            uploadBtn.addEventListener('click', async () => {
+                if (!selectedFile) return;
+                
+                // 获取配置
+                const chunkSizeMB = parseFloat(chunkSizeInput.value) || 1;
+                const chunkSize = chunkSizeMB * 1024 * 1024; // 转换为字节
+                const uploadUrl = uploadUrlInput.value.trim();
+                const uuidField = uuidFieldInput.value.trim();
+                
+                if (!uploadUrl) {
+                    showResult('请输入上传URL', 'error');
+                    return;
+                }
+                
+                // 准备上传
+                uploadStartTime = Date.now();
+                currentChunkIndex = 0;
+                uploadProgress.classList.remove('hidden');
+                uploadResult.classList.add('hidden');
+                progressBar.style.width = '0%';
+                progressPercentage.textContent = '0%';
+                uploadStatus.textContent = '准备上传...';
+                uploadBtn.disabled = true;
+                uploadBtn.classList.add('btn-disabled');
+                
+                try {
+                    // 分割文件
+                    const chunks = splitFileIntoChunks(selectedFile, chunkSize);
+                    totalChunks = chunks.length;
+                    
+                    // 逐个上传分片
+                    await uploadChunks(chunks, uploadUrl, uuidField);
+                    
+                    const uploadTime = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
+                    uploadStatus.textContent = `上传完成！用时: ${uploadTime}秒`;
+                    showResult(`文件 ${selectedFile.name} 上传成功！`, 'success');
+                } catch (error) {
+                    uploadStatus.textContent = `上传失败: ${error.message}`;
+                    showResult(`上传失败: ${error.message}`, 'error');
+                } finally {
+                    uploadBtn.disabled = false;
+                    uploadBtn.classList.remove('btn-disabled');
+                }
+            });
+            
+            // 分割文件为分片
+            function splitFileIntoChunks(file, chunkSize) {
+                const chunks = [];
+                const fileSize = file.size;
+                let start = 0;
+                
+                while (start < fileSize) {
+                    const end = Math.min(start + chunkSize, fileSize);
+                    const chunk = file.slice(start, end);
+                    chunks.push(chunk);
+                    start = end;
+                }
+                
+                return chunks;
+            }
+            
+            // 上传所有分片
+            async function uploadChunks(chunks, uploadUrl, uuidField) {
+                for (currentChunkIndex = 0; currentChunkIndex < chunks.length; currentChunkIndex++) {
+                    const chunk = chunks[currentChunkIndex];
+                    const progress = ((currentChunkIndex + 1) / chunks.length) * 100;
+                    
+                    updateProgress(progress, `上传分片 ${currentChunkIndex + 1}/${chunks.length}`);
+                    
+                    await uploadSingleChunk(chunk, currentChunkIndex, chunks.length, uploadUrl, uuidField);
+                }
+            }
+            
+            // 上传单个分片
+            function uploadSingleChunk(chunk, chunkIndex, totalChunks, uploadUrl, uuidField) {
+                return new Promise((resolve, reject) => {
+                    const formData = new FormData();
+                    formData.append('chunk', chunk);
+                    formData.append('fileName', selectedFile.name);
+                    formData.append('chunkIndex', chunkIndex);
+                    formData.append('totalChunks', totalChunks);
+                    
+                    // 添加UUID/字段
+                    if (uuidField) {
+                        formData.append('field', uuidField);
+                    }
+                    
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', uploadUrl, true);
+                    
+                    xhr.onload = function() {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            try {
+                                const response = JSON.parse(xhr.responseText);
+                                // 根据实际接口返回格式调整判断逻辑
+                                if (response.code === 0 || response.status === 'success') {
+                                    resolve();
+                                } else {
+                                    reject(new Error(response.message || '上传失败，服务器返回错误'));
+                                }
+                            } catch (e) {
+                                reject(new Error('解析服务器响应失败'));
+                            }
+                        } else {
+                            reject(new Error(`HTTP错误，状态码: ${xhr.status}`));
+                        }
+                    };
+                    
+                    xhr.onerror = function() {
+                        reject(new Error('网络错误，上传中断'));
+                    };
+                    
+                    xhr.send(formData);
+                });
+            }
+            
+            // 更新进度
+            function updateProgress(percentage, statusText) {
+                progressBar.style.width = `${percentage}%`;
+                progressPercentage.textContent = `${percentage.toFixed(2)}%`;
+                uploadStatus.textContent = statusText;
+            }
+            
+            // 显示结果
+            function showResult(message, type = 'info') {
+                uploadResult.textContent = message;
+                
+                if (type === 'success') {
+                    uploadResult.className = 'mt-6 p-4 rounded-md bg-success/10 text-success';
+                } else if (type === 'error') {
+                    uploadResult.className = 'mt-6 p-4 rounded-md bg-error/10 text-error';
+                } else {
+                    uploadResult.className = 'mt-6 p-4 rounded-md bg-secondary/10 text-secondary';
+                }
+                
+                uploadResult.classList.remove('hidden');
+            }
+            
+            // 格式化文件大小
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        });
+    </script>
+</body>
+</html>    

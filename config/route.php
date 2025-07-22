@@ -14,8 +14,11 @@
 
 
 use Webman\Route;
+use app\api\controller\UploadController;
 
 
 // 加载api应用下的路由配置
 require_once app_path('api/config/route.php');
 Route::disableDefaultRoute('','api');
+
+

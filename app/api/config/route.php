@@ -3,6 +3,7 @@ use Webman\Route;
 use app\api\controller\UserController;
 use app\api\controller\PrintSettingController;
 use app\api\controller\UserAttachmentController;
+use app\api\controller\UploadController;
 
 Route::group('/api', function () {
 
@@ -26,6 +27,7 @@ Route::group('/api', function () {
 
     //打印设置
     Route::group('/printSetting',function (){
+        //获取打印设置
         Route::get('/getPrintSetting',[PrintSettingController::class,'getPrintSetting']);
         //生成预览
         Route::get('/genPreview',[PrintSettingController::class,'genPreview']);
@@ -39,7 +41,13 @@ Route::group('/api', function () {
         Route::post('/addWaitPrintList',[UserAttachmentController::class,'addPrintList']);
     });
 
-})->middleware([\app\api\middleware\Authorize::class]);
+    Route::group('/common',function(){
+        Route::post('/upload', [UploadController::class, 'upload']);
+    });
+    
+
+})->middleware([\app\api\middleware\Authorize::class,\app\api\middleware\AccessControl::class]);
+
 
 
 Route::disableDefaultRoute('','api');
