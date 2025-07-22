@@ -31,18 +31,22 @@ Route::group('/api', function () {
         Route::get('/getPrintSetting',[PrintSettingController::class,'getPrintSetting']);
         //生成预览
         Route::get('/genPreview',[PrintSettingController::class,'genPreview']);
+        //更新打印设置
+        Route::put('/updatePrintSetting',[PrintSettingController::class,'updatePrintSetting']);
     });
     
     //用户附件设置
     Route::group('/userAttachment',function (){
         //待打印列表
         Route::get('/getWaitPrintList',[UserAttachmentController::class,'waitPrintList']);
-        //添加待打印列表
-        Route::post('/addWaitPrintList',[UserAttachmentController::class,'addPrintList']);
+        // 添加待打印列表
+        // Route::post('/addWaitPrintList',[UserAttachmentController::class,'addPrintList']);
     });
 
     Route::group('/common',function(){
         Route::post('/upload', [UploadController::class, 'upload']);
+        //获取页数测试
+        Route::get('/getFilePage', [UploadController::class, 'getFilePage']);
     });
     
 

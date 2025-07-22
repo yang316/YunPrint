@@ -1,6 +1,6 @@
 <?php
 
-namespace app\api\extends;
+namespace app\api\extend;
 
 use DateTime;
 use DateTimeZone;

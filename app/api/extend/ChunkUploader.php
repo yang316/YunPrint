@@ -1,8 +1,6 @@
 <?php
-namespace app\api\extends;
 
-use Exception;
-
+namespace app\api\extend;
 /**
  * 分片上传工具类
  * 支持大文件分片上传和断点续传
@@ -12,6 +10,8 @@ use Exception;
  * 或静态调用：
  * $result = ChunkUploader::upload();
  */
+use Exception;
+
 class ChunkUploader
 {
     // 配置项
@@ -129,7 +129,7 @@ class ChunkUploader
         
         // 获取必要参数
         $fileId = request()->post('fileId', '');
-        $fileName = request()->post('fileName', '');
+        $fileName = request()->post('fileName', '')??urldecode(request()->post('filename'));
         $chunkIndex = (int) request()->post('chunkIndex', 0);
         $totalChunks = (int) request()->post('totalChunks', 1);
         
@@ -188,7 +188,8 @@ class ChunkUploader
                 
                 return $this->setSuccess('文件上传完成', [
                     'filePath' => '/' . $this->config['upload_dir'] . $fileName,
-                    'savePath' => $this->config['upload_dir'] . $fileName
+                    'savePath' => $this->config['upload_dir'] . $fileName,
+                    'filename' => $fileName
                 ]);
             }
         }
@@ -277,6 +278,7 @@ class ChunkUploader
         $this->result['status'] = 'success';
         $this->result['message'] = $message;
         $this->result['data'] = $data;
+        $this->result['code'] = 200;
         return $this->result;
     }
 

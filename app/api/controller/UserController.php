@@ -6,7 +6,7 @@ use support\Request;
 use support\think\Db;
 use app\api\model\Sms;
 use GuzzleHttp\Client;
-use app\api\extends\Random;
+use app\api\extend\Random;
 use app\api\model\SystemConfig;
 use app\api\validate\UserValidate;
 use think\exception\ValidateException;

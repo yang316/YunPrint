@@ -4,7 +4,7 @@ namespace app\api\model;
 
 use think\Model;
 use think\model\concern\SoftDelete;
-use app\api\extends\Random;
+use app\api\extend\Random;
 
 class Token extends Model
 {
