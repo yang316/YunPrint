@@ -26,16 +26,12 @@ class PrintSettingController extends BaseController
     public function getPrintSetting()
     {
         try {
-            $params = $this->validate->failException(true)
+            $this->validate->failException(true)
                 ->scene('getPrintSetting')
                 ->check($this->request->all());
-
-            $where = [
-                ['status', '=', 1],
-            ];
             // 查询并分组
             $list = $this->model
-                ->where($where)
+                ->where(['status' => 1])
                 ->field(['id', 'type', 'name', 'value', 'price',''])
                 ->select();
             // 按 type 分组
@@ -54,15 +50,46 @@ class PrintSettingController extends BaseController
     /**
      * 生成预览图
      */
+    /**
+     * 生成预览图
+     * 
+     * @return \think\Response
+     */
     public function genPreview()
     {
-        //pdf\docx生成预览图
-//        $file = $this->request->file('file');
-        // $file = (new DocumentToImage)->convertToImages('public/uploads/众联加油小程序端操作文档(1).pdf');
-        $file = (new DocumentToImage)->convertToImages('public/uploads/众联加油小程序端操作文档.docx');
-        d($file);
+        try {
+            // 获取文件路径或URL
+            $filePath = $this->request->input('file_path', '');
+            
+            if (empty($filePath)) {
+                // 如果没有提供文件路径，尝试获取上传的文件
+                $file = $this->request->file('file');
+                if ($file) {
+                    // 保存上传的文件
+                    $savePath = 'public/uploads/';
+                    $info = $file->move($savePath);
+                    if ($info) {
+                        $filePath = $savePath . $info->getSaveName();
+                    } else {
+                        return $this->error('文件上传失败：' . $file->getError());
+                    }
+                } else {
+                    // 使用示例文件（仅用于测试）
+                    $filePath = 'https://mashangyunyin.oss-cn-beijing.aliyuncs.com/uploads/1753067457130_7k1d81g2dj.pdf';
+                }
+            }
+            
+            // 使用DocumentToImage类转换文件为图片
+            $document = new DocumentToImage();
+            $result = $document->convertToImages($filePath);
+
+            // 返回转换结果
+            return $this->success('文件转换成功', $result);
+        } catch (\Exception $e) {
+            return $this->error('生成预览图失败：' . $e->getMessage());
+        }
     }
 
-
+   
 
 }

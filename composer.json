@@ -28,7 +28,9 @@
     "workerman/webman-framework": "^2.1",
     "monolog/monolog": "^2.0",
     "saithink/saiadmin": "^5.0",
-    "next/var-dumper": "^0.1.1"
+    "next/var-dumper": "^0.1.1",
+    "aliyuncs/oss-sdk-php": "^2.7",
+    "phpoffice/phpword": "^1.4"
   },
   "suggest": {
     "ext-event": "For better performance. "

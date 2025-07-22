@@ -26,6 +26,9 @@ class UserController extends BaseController
         $this->validate = new UserValidate;
     }
 
+    /**
+     * 用户登录
+     */
     public function login(Request $request)
     {
 
@@ -247,6 +250,7 @@ class UserController extends BaseController
             return $this->error('登录失败: ' . $e->getMessage());
         }
     }
+    
     /**
      * 获取用户信息
      */

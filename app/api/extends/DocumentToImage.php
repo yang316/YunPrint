@@ -32,6 +32,39 @@ class DocumentToImage
      */
     public function convertToImages($filePath, $options = [])
     {
+        // 检查是否是远程URL（阿里云OSS或其他HTTP/HTTPS链接）
+        if (preg_match('/^https?:\/\//', $filePath)) {
+            try {
+                // 下载远程文件到本地临时目录
+                $localFilePath = $this->downloadRemoteFile($filePath);
+                
+                // 使用本地文件路径进行后续处理
+                $result = $this->processLocalFile($localFilePath, $options);
+                
+                // 处理完成后删除临时文件
+                if (file_exists($localFilePath)) {
+                    unlink($localFilePath);
+                }
+                
+                return $result;
+            } catch (\Exception $e) {
+                return [
+                    'success' => false,
+                    'message' => '远程文件处理失败: ' . $e->getMessage(),
+                    'data' => []
+                ];
+            }
+        } else {
+            // 本地文件处理
+            return $this->processLocalFile($filePath, $options);
+        }
+    }
+    
+    /**
+     * 处理本地文件
+     */
+    private function processLocalFile($filePath, $options = [])
+    {
         $fileExt = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
 
         $defaultOptions = [
@@ -633,14 +666,39 @@ class DocumentToImage
 
     /**
      * 获取 PDF 页数
+     * 
+     * @param string $filePath PDF文件路径
+     * @return int 页数
      */
-    private function getPdfPageCount($filePath)
+    public function getPdfPageCount($filePath)
     {
+        // 检查是否是远程URL
+        if (preg_match('/^https?:\/\//', $filePath)) {
+            try {
+                // 下载远程文件到本地临时目录
+                $localFilePath = $this->downloadRemoteFile($filePath);
+                
+                // 获取页数
+                $pageCount = $this->getPdfPageCount($localFilePath);
+                
+                // 处理完成后删除临时文件
+                if (file_exists($localFilePath)) {
+                    unlink($localFilePath);
+                }
+                
+                return $pageCount;
+            } catch (\Exception $e) {
+                error_log("获取远程PDF页数失败: " . $e->getMessage());
+                return 1; // 默认返回1页
+            }
+        }
+
         // 尝试使用 Imagick
         if (extension_loaded('imagick')) {
             try {
                 $imagick = new \Imagick();
                 $imagick->readImage($filePath);
+                
                 $pageCount = $imagick->getNumberImages();
                 $imagick->clear();
                 $imagick->destroy();
@@ -649,7 +707,7 @@ class DocumentToImage
                 // 继续尝试其他方法
             }
         }
-
+        
         // 使用 pdfinfo
         if ($this->commandExists('pdfinfo')) {
             $command = 'pdfinfo ' . escapeshellarg($filePath);
@@ -658,7 +716,7 @@ class DocumentToImage
                 return intval($matches[1]);
             }
         }
-
+        
         // 使用 Ghostscript
         if ($this->commandExists('gs')) {
             $command = sprintf(
@@ -676,6 +734,147 @@ class DocumentToImage
         }
 
         return 1; // 默认返回 1 页
+    }
+    
+    /**
+     * 获取DOC文件页数
+     * 
+     * @param string $filePath DOC文件路径
+     * @return int 页数
+     */
+    public function getDocPageCount($filePath)
+    {
+        // 检查是否是远程URL
+        if (preg_match('/^https?:\/\//', $filePath)) {
+            try {
+                // 下载远程文件到本地临时目录
+                $localFilePath = $this->downloadRemoteFile($filePath);
+                
+                // 获取页数
+                $pageCount = $this->getDocPageCount($localFilePath);
+                
+                // 处理完成后删除临时文件
+                if (file_exists($localFilePath)) {
+                    unlink($localFilePath);
+                }
+                
+                return $pageCount;
+            } catch (\Exception $e) {
+                error_log("获取远程DOC页数失败: " . $e->getMessage());
+                return 1; // 默认返回1页
+            }
+        }
+        
+        try {
+            // 先转换为PDF
+            $pdfPath = $this->convertDocToPdf($filePath);
+            
+            // 获取PDF的页数
+            $pageCount = $this->getPdfPageCount($pdfPath);
+            
+            // 删除临时PDF文件
+            if (file_exists($pdfPath)) {
+                unlink($pdfPath);
+            }
+            
+            return $pageCount;
+        } catch (\Exception $e) {
+            error_log("获取DOC页数失败: " . $e->getMessage());
+            return 1; // 默认返回1页
+        }
+    }
+    
+    /**
+     * 获取DOCX文件页数
+     * 
+     * @param string $filePath DOCX文件路径
+     * @return int 页数
+     */
+    public function getDocxPageCount($filePath)
+    {
+        // 检查是否是远程URL
+        if (preg_match('/^https?:\/\//', $filePath)) {
+            try {
+                // 下载远程文件到本地临时目录
+                $localFilePath = $this->downloadRemoteFile($filePath);
+                
+                // 获取页数
+                $pageCount = $this->getDocxPageCount($localFilePath);
+                
+                // 处理完成后删除临时文件
+                if (file_exists($localFilePath)) {
+                    unlink($localFilePath);
+                }
+                
+                return $pageCount;
+            } catch (\Exception $e) {
+                error_log("获取远程DOCX页数失败: " . $e->getMessage());
+                return 1; // 默认返回1页
+            }
+        }
+        
+        // 方法1：使用ZipArchive读取文档内容
+        if (class_exists('ZipArchive')) {
+            try {
+                $zip = new \ZipArchive();
+                if ($zip->open($filePath) === true) {
+                    // 尝试读取app.xml文件，它包含页数信息
+                    $content = $zip->getFromName('docProps/app.xml');
+                    $zip->close();
+                    
+                    if ($content) {
+                        // 解析XML内容
+                        $xml = simplexml_load_string($content);
+                        if ($xml && isset($xml->Pages)) {
+                            return (int)$xml->Pages;
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                // 继续尝试其他方法
+            }
+        }
+        
+        // 方法2：转换为PDF后获取页数
+        try {
+            // 先转换为PDF
+            $pdfPath = $this->convertDocToPdf($filePath);
+            
+            // 获取PDF的页数
+            $pageCount = $this->getPdfPageCount($pdfPath);
+            
+            // 删除临时PDF文件
+            if (file_exists($pdfPath)) {
+                unlink($pdfPath);
+            }
+            
+            return $pageCount;
+        } catch (\Exception $e) {
+            error_log("获取DOCX页数失败: " . $e->getMessage());
+            return 1; // 默认返回1页
+        }
+    }
+    
+    /**
+     * 获取文档页数（自动识别文件类型）
+     * 
+     * @param string $filePath 文件路径
+     * @return int 页数
+     */
+    public function getDocumentPageCount($filePath)
+    {
+        $fileExt = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        
+        switch ($fileExt) {
+            case 'pdf':
+                return $this->getPdfPageCount($filePath);
+            case 'doc':
+                return $this->getDocPageCount($filePath);
+            case 'docx':
+                return $this->getDocxPageCount($filePath);
+            default:
+                throw new \Exception("不支持的文件格式: {$fileExt}");
+        }
     }
 
     /**
@@ -703,6 +902,101 @@ class DocumentToImage
     {
         $test = shell_exec("which $command 2>/dev/null");
         return !empty($test);
+    }
+
+    /**
+     * 下载远程文件到本地临时目录
+     * 
+     * @param string $url 远程文件URL
+     * @return string 本地临时文件路径
+     * @throws \Exception 下载失败时抛出异常
+     */
+    private function downloadRemoteFile($url)
+    {
+        // 从URL中提取文件扩展名
+        $urlPath = parse_url($url, PHP_URL_PATH);
+        $extension = pathinfo($urlPath, PATHINFO_EXTENSION);
+        
+        // 如果无法从URL获取扩展名，尝试从Content-Type获取
+        if (empty($extension)) {
+            $headers = get_headers($url, 1);
+            $contentType = $headers['Content-Type'] ?? '';
+            
+            // 根据Content-Type映射扩展名
+            $mimeToExt = [
+                'application/pdf' => 'pdf',
+                'application/msword' => 'doc',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx'
+            ];
+            
+            $extension = $mimeToExt[$contentType] ?? '';
+            
+            // 如果仍然无法确定扩展名，抛出异常
+            if (empty($extension)) {
+                throw new \Exception('无法确定远程文件类型，不支持的文件格式');
+            }
+        }
+        
+        // 创建临时文件路径
+        $tempFilePath = $this->tempDir . '/' . uniqid('remote_', true) . '.' . $extension;
+        
+        // 确保临时目录存在
+        if (!is_dir($this->tempDir) && !mkdir($this->tempDir, 0755, true)) {
+            throw new \Exception('无法创建临时目录: ' . $this->tempDir);
+        }
+        
+        // 下载文件
+        $maxRetries = 3;
+        $retryCount = 0;
+        $success = false;
+        
+        while ($retryCount < $maxRetries && !$success) {
+            // 尝试使用file_get_contents下载
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 30,  // 30秒超时
+                    'header' => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                ]
+            ]);
+            
+            $fileContent = @file_get_contents($url, false, $context);
+            
+            if ($fileContent !== false) {
+                // 写入临时文件
+                if (file_put_contents($tempFilePath, $fileContent) !== false) {
+                    $success = true;
+                }
+            }
+            
+            // 如果file_get_contents失败，尝试使用curl
+            if (!$success && function_exists('curl_init')) {
+                $ch = curl_init($url);
+                $fp = fopen($tempFilePath, 'w+');
+                
+                curl_setopt($ch, CURLOPT_TIMEOUT, 50);
+                curl_setopt($ch, CURLOPT_FILE, $fp);
+                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+                
+                $success = curl_exec($ch);
+                curl_close($ch);
+                fclose($fp);
+            }
+            
+            $retryCount++;
+            
+            // 如果下载失败且未达到最大重试次数，等待一秒后重试
+            if (!$success && $retryCount < $maxRetries) {
+                sleep(1);
+            }
+        }
+        
+        // 检查下载是否成功
+        if (!$success || !file_exists($tempFilePath) || filesize($tempFilePath) == 0) {
+            throw new \Exception('远程文件下载失败');
+        }
+        
+        return $tempFilePath;
     }
 
     /**

@@ -2,6 +2,7 @@
 use Webman\Route;
 use app\api\controller\UserController;
 use app\api\controller\PrintSettingController;
+use app\api\controller\UserAttachmentController;
 
 Route::group('/api', function () {
 
@@ -29,6 +30,15 @@ Route::group('/api', function () {
         //生成预览
         Route::get('/genPreview',[PrintSettingController::class,'genPreview']);
     });
+    
+    //用户附件设置
+    Route::group('/userAttachment',function (){
+        //待打印列表
+        Route::get('/getWaitPrintList',[UserAttachmentController::class,'waitPrintList']);
+        //添加待打印列表
+        Route::post('/addWaitPrintList',[UserAttachmentController::class,'addPrintList']);
+    });
+
 })->middleware([\app\api\middleware\Authorize::class]);
 
 
