@@ -3,7 +3,8 @@
 namespace app\api\controller;
 
 use app\api\extend\ChunkUploader;
-use app\api\extend\DocumentToImage;
+use app\api\extend\WordProcessor;
+use app\api\extend\PdfProcessor;
 class UploadController extends BaseController
 {
     protected $noNeedLogin = ['getFilePage'];
@@ -41,8 +42,11 @@ class UploadController extends BaseController
             $return = array_merge($result['data'], $addResult['data']);
 
             return $this->success($return, '操作成功');
+
         }else{
+
             return $this->success($result['data'],$result['message']);
+            
         }
     }
 
@@ -57,17 +61,21 @@ class UploadController extends BaseController
         $printSetting = \app\api\model\PrintSetting::where(['is_default' => 1,'status'=>1])->field(['name', 'price', 'type','value'])->select()->toArray();
         //读取文件页数
         $totalPage = 0;
-        $document = new DocumentToImage();
-        try {
-            // 使用新的统一方法获取文档页数
-            $totalPage = $document->getDocumentPageCount('public'.$url);
-        } catch (\Exception $e) {
-            // 如果获取页数失败，记录错误并设置默认页数为1
-            return $this->error('获取页数失败');
+        //根据文件后缀判断是pdf还是doc
+        $ext = pathinfo($url, PATHINFO_EXTENSION);
+        if ($ext === 'pdf') {
+            // 使用PDF处理器
+            $processor = new PdfProcessor();
+            $totalPage = $processor->getPageCount('public'.$url);
+        } else {
+            // 使用Word处理器
+            $processor = new WordProcessor();
+            $totalPage = $processor->getPageCount('public'.$url);
         }
+    
         //价格
         $paperPrice = array_sum(array_column($printSetting, 'price'));
-        $totalPrice = bcmul($paperPrice,$totalPage,2);
+        $totalPrice = round($paperPrice*$totalPage,2);
         //选定页数
         $selectPage = ['start'=>1,'end'=>$totalPage];
         //保存数据
@@ -99,23 +107,4 @@ class UploadController extends BaseController
         ];
     }
 
-    /**
-     * 获取文件页数
-     *
-     * @return void
-     */
-    public function getFilePage()
-    {
-        $printSetting = \app\api\model\PrintSetting::where(['is_default' => 1,'status'=>1])->field(['name', 'price', 'type'])->select()->toArray();
-        d(json_encode($printSetting));
-         $document = new DocumentToImage();
-        // try {
-            // 使用新的统一方法获取文档页数
-            $totalPage = $document->getDocumentPageCount('public/uploads/众联加油小程序端操作文档(1).pdf');
-        // } catch (\Exception $e) {
-        //     // 如果获取页数失败，记录错误并设置默认页数为1
-        //     return $this->error('获取页数失败');
-        // }
-        d($totalPage);
-    }
 }

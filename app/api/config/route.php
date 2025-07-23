@@ -4,7 +4,7 @@ use app\api\controller\UserController;
 use app\api\controller\PrintSettingController;
 use app\api\controller\UserAttachmentController;
 use app\api\controller\UploadController;
-
+use app\api\controller\DocumentController;
 Route::group('/api', function () {
 
     //用户接口
@@ -31,26 +31,40 @@ Route::group('/api', function () {
         Route::get('/getPrintSetting',[PrintSettingController::class,'getPrintSetting']);
         //生成预览
         Route::get('/genPreview',[PrintSettingController::class,'genPreview']);
-        //更新打印设置
-        Route::put('/updatePrintSetting',[PrintSettingController::class,'updatePrintSetting']);
+       
     });
     
     //用户附件设置
     Route::group('/userAttachment',function (){
         //待打印列表
         Route::get('/getWaitPrintList',[UserAttachmentController::class,'waitPrintList']);
-        // 添加待打印列表
-        // Route::post('/addWaitPrintList',[UserAttachmentController::class,'addPrintList']);
+         //更新打印设置
+        Route::put('/updatePrintSetting',[UserAttachmentController::class,'updatePrintSetting']);
     });
 
     Route::group('/common',function(){
         Route::post('/upload', [UploadController::class, 'upload']);
         //获取页数测试
-        Route::get('/getFilePage', [UploadController::class, 'getFilePage']);
+        Route::get('/getPdfPages', [DocumentController::class, 'getPdfPages']);
+    });
+    
+    // 文档处理
+    Route::group('/document', function() {
+        // 文档转图片
+        Route::post('/convertToImages', [DocumentController::class, 'convertToImages']);
+        // 合并PDF文件
+        Route::post('/mergeDocuments', [DocumentController::class, 'mergeDocuments']);
+        // 合并Word文档
+        Route::post('/mergeWord', [DocumentController::class, 'mergeWord']);
+        // 获取系统信息
+        Route::get('/systemInfo', [DocumentController::class, 'systemInfo']);
     });
     
 
-})->middleware([\app\api\middleware\Authorize::class,\app\api\middleware\AccessControl::class]);
+})->middleware([
+    \app\api\middleware\Authorize::class,
+    \app\api\middleware\AccessControl::class
+]);
 
 
 
