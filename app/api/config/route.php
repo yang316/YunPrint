@@ -29,8 +29,6 @@ Route::group('/api', function () {
     Route::group('/printSetting',function (){
         //获取打印设置
         Route::get('/getPrintSetting',[PrintSettingController::class,'getPrintSetting']);
-        //生成预览
-        Route::get('/genPreview',[PrintSettingController::class,'genPreview']);
        
     });
     
@@ -40,9 +38,14 @@ Route::group('/api', function () {
         Route::get('/getWaitPrintList',[UserAttachmentController::class,'waitPrintList']);
          //更新打印设置
         Route::put('/updatePrintSetting',[UserAttachmentController::class,'updatePrintSetting']);
+        //获取预览图
+        Route::get('/getPreview',[UserAttachmentController::class,'getPreview']);
+        //删除文件
+        Route::delete('/deleteAttachment',[UserAttachmentController::class,'deleteAttachment']);
     });
-
+    //通用接口
     Route::group('/common',function(){
+        //分片上传文件
         Route::post('/upload', [UploadController::class, 'upload']);
         //获取页数测试
         Route::get('/getPdfPages', [DocumentController::class, 'getPdfPages']);
@@ -50,8 +53,6 @@ Route::group('/api', function () {
     
     // 文档处理
     Route::group('/document', function() {
-        // 文档转图片
-        Route::post('/convertToImages', [DocumentController::class, 'convertToImages']);
         // 合并PDF文件
         Route::post('/mergeDocuments', [DocumentController::class, 'mergeDocuments']);
         // 合并Word文档

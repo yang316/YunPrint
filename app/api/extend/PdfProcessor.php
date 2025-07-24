@@ -95,9 +95,9 @@ class PdfProcessor
         }
 
         // 尝试使用Imagick转换
-        if (extension_loaded('imagick')) {
-            return $this->convertWithImagick($pdfPath, $pageNumbers, $resolution, $format, $quality);
-        }
+        // if (extension_loaded('imagick')) {
+        //     return $this->convertWithImagick($pdfPath, $pageNumbers, $resolution, $format, $quality);
+        // }
 
         // 尝试使用Ghostscript转换
         if ($this->commandExists('gs')) {
@@ -198,10 +198,28 @@ class PdfProcessor
                 // 构建Ghostscript命令
                 $gsFormat = ($format === 'jpg') ? 'jpeg' : $format;
                 $qualityOption = ($format === 'jpg' || $format === 'jpeg') ? "-dJPEGQ={$quality}" : '';
+                
+                // 设置正确的Ghostscript设备名称
+                $deviceName = '';
+                switch ($format) {
+                    case 'jpg':
+                    case 'jpeg':
+                        $deviceName = 'jpeg';
+                        break;
+                    case 'png':
+                        $deviceName = 'png16m';
+                        break;
+                    case 'tiff':
+                        $deviceName = 'tiff24nc';
+                        break;
+                    default:
+                        $deviceName = 'jpeg';
+                        break;
+                }
 
                 $command = sprintf(
                     'gs -dSAFER -dBATCH -dNOPAUSE -sDEVICE=%s %s -r%d -dFirstPage=%d -dLastPage=%d -sOutputFile=%s %s 2>&1',
-                    $gsFormat . 'alpha',
+                    $deviceName,
                     $qualityOption,
                     $resolution,
                     $pageNumber,

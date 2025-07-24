@@ -17,6 +17,7 @@ class UserAttachment extends Model
     // 定义字段类型
     protected $type = [
         'options'       => 'array',
-        'selectPage'   => 'array'
+        'selectPage'    => 'array',
+        'previceImages'       => 'array'
     ];
 }

@@ -17,63 +17,6 @@ class DocumentController extends BaseController
 {
     protected $noNeedLogin = [];
 
-    /**
-     * 将文档转换为图片
-     */
-    public function convertToImages()
-    {
-        try {
-            // 获取上传的文件
-            $file = $this->request->file('file');
-            if (!$file || !$file->isValid()) {
-                return json(['code' => 400, 'msg' => '请上传有效的文件']);
-            }
-
-            // 获取文件路径
-            $filePath = $file->getPathname();
-            $originalName = $file->getUploadName();
-
-            // 获取要转换的页码
-            $pages = $this->request->post('pages', 'all');
-            
-            // 获取转换选项
-            $options = [
-                'resolution' => (int)$this->request->post('resolution', 150),
-                'format' => $this->request->post('format', 'jpg'),
-                'quality' => (int)$this->request->post('quality', 90)
-            ];
-
-            // 根据文件扩展名选择处理器
-            $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-
-            if ($ext === 'pdf') {
-                // 使用PDF处理器
-                $processor = new PdfProcessor();
-                $result = $processor->generatePreviewImages($filePath, $pages, $options['resolution'], $options['format'], $options['quality']);
-            } elseif ($ext === 'doc' || $ext === 'docx') {
-                // 使用Word处理器
-                $processor = new WordProcessor();
-                $result = $processor->generatePreviewImages($filePath, $pages, $options['resolution'], $options['format'], $options['quality']);
-            } else {
-                return json(['code' => 400, 'msg' => '不支持的文件格式：' . $ext]);
-            }
-
-            // 转换结果为URL格式
-            $urls = [];
-            foreach ($result as $imagePath) {
-                $urls[] = [
-                    'path' => $imagePath,
-                    'url' => '/uploads/images/' . basename($imagePath)
-                ];
-            }
-
-            return json(['code' => 0, 'data' => $urls]);
-        } catch (\Exception $e) {
-            error_log('文档转图片错误: ' . $e->getMessage());
-            return json(['code' => 500, 'msg' => $e->getMessage()]);
-        }
-    }
-
 
     /**
      * 合并PDF文件（仅支持文件路径模式）
@@ -219,7 +162,7 @@ class DocumentController extends BaseController
                 }
             }
             //删除旧的数据
-            // \app\api\model\UserAttachment::whereIn('id',$ids)->delete();
+            \app\api\model\UserAttachment::whereIn('id',$ids)->delete();
             //整理新数据保存到数据库
             (new UploadController)->addPrintList('合并文件-'.basename($outputPath),$outputUrl);
             return $this->success([
@@ -282,7 +225,6 @@ class DocumentController extends BaseController
         // 执行命令
         $command = "{$pythonCommand} {$scriptPath} {$outputArg} {$inputFilesArg} 2>&1";
         exec($command, $output, $returnCode);
-        // d($returnCode);
         if( $returnCode == 0 ) {
             return $outputFile;
         }else{

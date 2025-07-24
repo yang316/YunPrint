@@ -10,7 +10,8 @@ class UserAttachmentValidate extends Validate
     protected $rule = [
         'url'       => 'require|checkFileExt',
         'id'        => 'require',
-        'options'   => 'require|array'
+        'options'   => 'require|array',
+        'atta_id'   => 'require|integer',
     ];
 
     protected $message = [
@@ -18,12 +19,17 @@ class UserAttachmentValidate extends Validate
         'url.regex'     => '文件格式必须为doc、docx或pdf',
         'id.require'        => '请输入打印设置ID',
         'options.require'   => '请输入打印设置',
-        'options.array'     => '打印设置格式错误'
+        'options.array'     => '打印设置格式错误',
+        'atta_id.require'     => '请选择要删除的文件',
+        'atta_id.integer'     => '请选择要删除的文件',
+        
+
     ];
 
     protected $scene = [
-        'addPrintList'  => ['url'],
-        'updatePrintSetting' => ['id','options']
+        'updatePrintSetting'    => ['id','options'],
+        'deleteAttachment'      => ['atta_id'],
+        'getPreview'            => ['atta_id'],
     ];
 
      // 方案一：闭包验证方法
