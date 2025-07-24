@@ -55,7 +55,7 @@ class UploadController extends BaseController
     /**
      * 添加到待打印列表
      */
-    private function addPrintList($filename, $url)
+    public function addPrintList($filename, $url)
     {
         //默认选项
         $printSetting = \app\api\model\PrintSetting::where(['is_default' => 1,'status'=>1])->field(['name', 'price', 'type','value'])->select()->toArray();
@@ -102,7 +102,8 @@ class UploadController extends BaseController
                 'totalPrice'    =>  $totalPrice,
                 'totalPage'     =>  $totalPage,
                 'options'       =>  $printSetting,
-                'selectPage'    =>  $selectPage
+                'selectPage'    =>  $selectPage,
+                'copies'        => 1,
             ]
         ];
     }

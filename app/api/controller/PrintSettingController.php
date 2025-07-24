@@ -27,23 +27,19 @@ class PrintSettingController extends BaseController
     public function getPrintSetting()
     {
         try {
-            $this->validate->failException(true)
-                ->scene('getPrintSetting')
-                ->check($this->request->all());
             // 查询并分组
             $list = $this->model
                 ->where(['status' => 1])
-                ->field(['id', 'type', 'name', 'value', 'price'])
+                ->field(['id', 'type', 'name as label' , 'value', 'price'])
                 ->select();
             // 按 type 分组
             $groupedData = [];
             foreach ($list as $item) {
+                // $item['value'] = $item['type'];
                 $groupedData[$item['type']][] = $item;
             }
             return $this->success($groupedData);
-        } catch (ValidateException $e) {
-            return $this->error($e->getError());
-        } catch (\Exception $e) {
+        }  catch (\Exception $e) {
             return $this->error('系统错误，请稍后再试');
         }
     }

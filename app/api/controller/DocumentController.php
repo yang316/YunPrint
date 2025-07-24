@@ -5,6 +5,9 @@ namespace app\api\controller;
 use app\api\extend\PdfProcessor;
 use app\api\extend\WordProcessor;
 use support\Request;
+use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpWord\Document;
+use Symfony\Component\VarExporter\Internal\Exporter;
 
 /**
  * 文档处理控制器
@@ -12,8 +15,7 @@ use support\Request;
  */
 class DocumentController extends BaseController
 {
-    protected $noNeedLogin = ['convertToImages', 'mergePdf', 'mergeWord', 'mergeDocuments', 'getPageCount', 'systemInfo','getPdfPages'];
-    protected $tempDir = '/tmp'; // 临时目录路径
+    protected $noNeedLogin = [];
 
     /**
      * 将文档转换为图片
@@ -118,7 +120,7 @@ class DocumentController extends BaseController
                 if (!file_exists('public'.$path)) {
                     continue;
                 }
-                
+
                 $ext = strtolower(pathinfo('public'.$path, PATHINFO_EXTENSION));;
                 // 判断文件类型
                 if ($ext === 'pdf') {
@@ -176,12 +178,12 @@ class DocumentController extends BaseController
                 if (!in_array($format, ['docx', 'pdf'])) {
                     $format = 'docx'; // 默认为docx
                 }
-                
-                $usePhpWord = (bool)$this->request->post('use_phpword', true);
-                $useTempMethod = (bool)$this->request->post('use_temp_method', false);
+                $outputPath = $this->pythonMergeDocx($validPaths);
+                // $usePhpWord = (bool)$this->request->post('use_phpword', true);
+                // $useTempMethod = (bool)$this->request->post('use_temp_method', false);
                 
 
-                $outputPath = $processor->mergeWordFiles($validPaths, null, $format, $usePhpWord, $useTempMethod);
+                // $outputPath = $processor->mergeWordFiles($validPaths, null, $format, $usePhpWord, $useTempMethod);
                 $outputFormat = $format;
             }
             
@@ -216,7 +218,10 @@ class DocumentController extends BaseController
                     throw new \Exception('合并后的文件不是有效的PDF格式');
                 }
             }
-         
+            //删除旧的数据
+            // \app\api\model\UserAttachment::whereIn('id',$ids)->delete();
+            //整理新数据保存到数据库
+            (new UploadController)->addPrintList('合并文件-'.basename($outputPath),$outputUrl);
             return $this->success([
                     // 'file_path' => $outputPath, 
                     'file_url' => $outputUrl,
@@ -252,8 +257,73 @@ class DocumentController extends BaseController
     }
 
 
+    /**
+     * python脚本合并文档
+     *
+     * @param [sting] $inputFiles
+     * @return void
+     */
+    public function pythonMergeDocx($inputFiles)
+    {
+         // 定义输出文件路径
+        $outputFile = 'public/uploads/merge/merged_document'.time().rand(1000,9999).'.docx';
+
+        // 构建 Python 命令
+        $pythonCommand = 'python3'; // 根据你的环境可能需要调整为 python
+        $scriptPath = 'public/merge.py'; // Python 脚本的完整路径
+
+        // 构建命令行参数
+        $inputFilesArg = implode(' ', array_map(function($file) {
+            return escapeshellarg($file);
+        }, $inputFiles));
+
+        $outputArg = $outputArg = '-o ' . escapeshellarg($outputFile);  // 分开处理选项和路径，避免空格被包裹
+
+        // 执行命令
+        $command = "{$pythonCommand} {$scriptPath} {$outputArg} {$inputFilesArg} 2>&1";
+        exec($command, $output, $returnCode);
+        // d($returnCode);
+        if( $returnCode == 0 ) {
+            return $outputFile;
+        }else{
+            throw new \Exception('合并docx失败');
+        }
+    }
+
     public function getPdfPages()
     {
+        $inputFiles = [
+            'public/uploads/众联加油小程序端操作文档_1753320500326_.docx',
+            'public/uploads/技术规范书demo_1753320487681_.docx',
+        ];
+
+        // 定义输出文件路径
+        $outputFile = 'public/uploads/merge/merged_document.docx';
+
+        // 构建 Python 命令
+        $pythonCommand = 'python3'; // 根据你的环境可能需要调整为 python
+        $scriptPath = 'public/merge.py'; // Python 脚本的完整路径
+
+        // 构建命令行参数
+        $inputFilesArg = implode(' ', array_map(function($file) {
+            return escapeshellarg($file);
+        }, $inputFiles));
+
+        $outputArg = $outputArg = '-o ' . escapeshellarg($outputFile);  // 分开处理选项和路径，避免空格被包裹
+
+        // 执行命令
+        $command = "{$pythonCommand} {$scriptPath} {$outputArg} {$inputFilesArg} 2>&1";
+        exec($command, $output, $returnCode);
+        d($returnCode);
+        // 处理结果
+        if ($returnCode === 0) {
+            echo "合并成功！文件已保存至: {$outputFile}";
+            echo "<pre>". implode("\n", $output) ."</pre>";
+        } else {
+            echo "合并失败！错误代码: {$returnCode}";
+            echo "<pre>". implode("\n", $output) ."</pre>";
+        }
+
         // $pdfPath = $this->request->post('pdf_path');
         // if (empty($pdfPath)) {
         //     return json(['code' => 400, 'msg' => '请提供PDF文件路径']);
