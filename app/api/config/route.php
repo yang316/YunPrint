@@ -5,6 +5,7 @@ use app\api\controller\PrintSettingController;
 use app\api\controller\UserAttachmentController;
 use app\api\controller\UploadController;
 use app\api\controller\DocumentController;
+use app\api\controller\OrderController;
 Route::group('/api', function () {
 
     //用户接口
@@ -61,6 +62,12 @@ Route::group('/api', function () {
         Route::get('/systemInfo', [DocumentController::class, 'systemInfo']);
     });
     
+    Route::group('/order',function (){
+        // 创建订单
+        Route::post('/create', [OrderController::class, 'createOrder']);
+        //获取订单列表
+        Route::get('/getOrderList',[OrderController::class,'getOrderList']);
+    });
 
 })->middleware([
     \app\api\middleware\Authorize::class,

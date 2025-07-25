@@ -113,7 +113,6 @@ class WordProcessor
         
         // 将Word文档转换为PDF
         $pdfPath = $this->convertWordToPdf($wordPath);
-        
         try {
             // 获取总页数
             $totalPages = $this->getPageCount($wordPath);

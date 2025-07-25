@@ -58,7 +58,14 @@ class UploadController extends BaseController
     public function addPrintList($filename, $url)
     {
         //默认选项
-        $printSetting = \app\api\model\PrintSetting::where(['is_default' => 1,'status'=>1])->field(['name', 'price', 'type','value'])->select()->toArray();
+        $printSetting = \app\api\model\PrintSetting::where([
+                'is_default'    => 1,
+                'status'        => 1
+            ])->field([
+                'id','name', 'price', 'type','value'
+            ])
+            ->select()
+            ->toArray();
         //读取文件页数
         $totalPage = 0;
         //根据文件后缀判断是pdf还是doc
@@ -103,7 +110,7 @@ class UploadController extends BaseController
                 'totalPage'     =>  $totalPage,
                 'options'       =>  $printSetting,
                 'selectPage'    =>  $selectPage,
-                'copies'        => 1,
+                'copies'        =>  1,
             ]
         ];
     }

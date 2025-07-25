@@ -7,6 +7,7 @@ use think\exception\ValidateException;
 use app\api\validate\UserAttachmentValidate;
 use Exception;
 use think\db\exception\PDOException;
+use app\api\extend\DocumentPreviewGenerator;
 
 class UserAttachmentController extends BaseController
 {
@@ -89,29 +90,22 @@ class UserAttachmentController extends BaseController
                     ->toArray();
             }
             //按类型分组
-            $groupedData = [];
-            foreach ($list as $item) {
-                $groupedData[$item['type']][] = $item;
-            }
             //查询用户上传文件页数
             $userAttachment = $this->model->where([
                 'user_id' => $this->request->user['id'],
                 'id'      => $params['id']
             ])->find();
             // 返回数组结果
+            $selectNums = $params['selectPage']['end']-$params['selectPage']['start']+1;
             $paperPrice         = array_sum(array_column($list, 'price')); //纸张单价
-            $totalPrice         = bcmul($paperPrice, $userAttachment['total'], 2); //纸张总价
-            $copies             = $params['copies']; //份数
-            $selectPage         = $params['selectPage']; //选中页数
-            $coverTextContent   = $params['coverTextContent']; //封面内容
-            $options            = $groupedData; //选项
-
+            $totalPrice         = round(round($paperPrice*$selectNums, 2)*$params['copies'],2); //纸张总价
             $userAttachment->paperPrice = $paperPrice;
             $userAttachment->totalPrice = $totalPrice;
-            $userAttachment->copies     = $copies;
-            $userAttachment->selectPage = $selectPage;
-            $userAttachment->coverTextContent = $coverTextContent;
-            $userAttachment->options = $options;
+            $userAttachment->copies     = $params['copies'];//份数
+            $userAttachment->selectPage = $params['selectPage'];//选中页数
+            $userAttachment->coverTextContent = $params['coverTextContent'];//封面内容
+            $userAttachment->options = $list;//选项
+            $userAttachment->uploadImage = $params['uploadImage'];//封面图
             $userAttachment->save();
 
             return $this->success();
@@ -130,12 +124,15 @@ class UserAttachmentController extends BaseController
      */
     public function getPreview()
     {
+       
+
         try {
 
-            $atta_id = $this->validate->failException(true)->scene('getPreview')->checked($this->request->input('atta_id', ''));
+            $params = $this->validate->failException(true)->scene('getPreview')->checked($this->request->all());
 
-            $attachment = $this->model->where(['id' => $atta_id,'user_id'=>$this->request->user['id']])->find();
-            if( $attachment ){
+            $attachment = $this->model->where(['id' => $params['atta_id'],'user_id'=>$this->request->user['id']])->find();
+
+            if( !$attachment ){
                 return $this->error('文件不存在');
             }
             //判断是否生成预览图
@@ -148,6 +145,7 @@ class UserAttachmentController extends BaseController
 
                     //生成预览图
                     $images = (new \app\api\extend\PdfProcessor())->generatePreviewImages('public' . $attachment->url, $range);
+
                 } else {
 
                     $images = (new \app\api\extend\WordProcessor())->generatePreviewImages('public' . $attachment->url, $range);
@@ -181,9 +179,9 @@ class UserAttachmentController extends BaseController
     public function deleteAttachment()
     {
         try {
-            $atta_id = $this->validate->failException(true)->scene('deleteAttachment')->checked($this->request->input('atta_id'));
+            $params = $this->validate->failException(true)->scene('deleteAttachment')->checked($this->request->all());
 
-            $attachment = $this->model->where(['id' => $atta_id])->find();
+            $attachment = $this->model->where(['id' => $params['atta_id']])->find();
             if ($attachment) {
                 $attachment->delete();
             }
