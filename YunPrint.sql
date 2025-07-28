@@ -11,7 +11,7 @@
  Target Server Version : 80034 (8.0.34)
  File Encoding         : 65001
 
- Date: 18/07/2025 09:59:19
+ Date: 28/07/2025 18:06:51
 */
 
 SET NAMES utf8mb4;
@@ -117,6 +117,154 @@ INSERT INTO `sa_article_category` VALUES (7, 2, '时尚', NULL, NULL, 100, 1, 1,
 INSERT INTO `sa_article_category` VALUES (8, 2, '女性', NULL, NULL, 100, 1, 1, 1, '2024-06-02 22:52:12', '2024-06-02 22:52:12', NULL);
 INSERT INTO `sa_article_category` VALUES (9, 3, '手机', NULL, NULL, 100, 1, 1, 1, '2024-06-02 22:52:37', '2024-06-02 22:52:37', NULL);
 INSERT INTO `sa_article_category` VALUES (10, 3, '生活', NULL, NULL, 100, 1, 1, 1, '2024-06-08 13:37:51', '2024-06-08 13:37:51', NULL);
+
+-- ----------------------------
+-- Table structure for sa_coupon_template
+-- ----------------------------
+DROP TABLE IF EXISTS `sa_coupon_template`;
+CREATE TABLE `sa_coupon_template`  (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '模板ID',
+  `title` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '优惠券标题',
+  `type` tinyint UNSIGNED NOT NULL DEFAULT 1 COMMENT '优惠券类型(1:满减券)',
+  `amount` decimal(10, 2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '优惠金额',
+  `min_amount` decimal(10, 2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '满减门槛金额',
+  `valid_days` int UNSIGNED NOT NULL COMMENT '有效天数',
+  `created_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `status` tinyint UNSIGNED NULL DEFAULT 0 COMMENT '状态:1=启用,0=关闭',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '优惠券模板表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sa_coupon_template
+-- ----------------------------
+INSERT INTO `sa_coupon_template` VALUES (1, '测试', 1, 5.00, 20.00, 7, '2025-07-28 14:54:49', '2025-07-28 16:31:29', 1);
+
+-- ----------------------------
+-- Table structure for sa_order
+-- ----------------------------
+DROP TABLE IF EXISTS `sa_order`;
+CREATE TABLE `sa_order`  (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` int UNSIGNED NOT NULL COMMENT '用户ID',
+  `order_sn` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '订单号',
+  `totalPrice` decimal(10, 2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '总价',
+  `couponPrice` decimal(10, 2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '优惠券价格',
+  `postage` decimal(10, 2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '邮费',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '下单时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `payType` enum('wechat') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'wechat' COMMENT '支付方式',
+  `status` tinyint UNSIGNED NULL DEFAULT 0 COMMENT '订单状态:0=未支付,1=待收货,2=已完成',
+  `payStatus` tinyint UNSIGNED NULL DEFAULT 0 COMMENT '支付状态:0=未支付,1=已支付',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `idx_id`(`id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '订单表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sa_order
+-- ----------------------------
+INSERT INTO `sa_order` VALUES (1, 1, 'YunPrint20250725173628120212', 14.00, 0.00, 0.00, '2025-07-25 17:36:28', '2025-07-25 17:36:28', NULL, 0, 0);
+INSERT INTO `sa_order` VALUES (2, 1, 'YunPrint20250725173821862335', 14.00, 0.00, 0.00, '2025-07-25 17:38:21', '2025-07-25 17:38:21', NULL, 0, 0);
+INSERT INTO `sa_order` VALUES (3, 1, 'YunPrint20250725173846277086', 14.00, 0.00, 0.00, '2025-07-25 17:38:46', '2025-07-25 17:38:46', NULL, 0, 0);
+INSERT INTO `sa_order` VALUES (4, 1, 'YunPrint20250725173945408594', 14.00, 0.00, 0.00, '2025-07-25 17:39:45', '2025-07-25 17:39:45', NULL, 0, 0);
+INSERT INTO `sa_order` VALUES (5, 1, 'YunPrint20250725174129269388', 14.00, 0.00, 0.00, '2025-07-25 17:41:29', '2025-07-25 17:41:29', NULL, 0, 0);
+
+-- ----------------------------
+-- Table structure for sa_order_items
+-- ----------------------------
+DROP TABLE IF EXISTS `sa_order_items`;
+CREATE TABLE `sa_order_items`  (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `order_id` int UNSIGNED NOT NULL COMMENT '订单ID',
+  `fileName` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件名',
+  `paperPrice` decimal(10, 2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '纸张价格',
+  `totalPrice` decimal(10, 2) UNSIGNED NULL DEFAULT 0.00 COMMENT '总价',
+  `totalPage` int UNSIGNED NOT NULL COMMENT '文件页数',
+  `copies` int UNSIGNED NOT NULL DEFAULT 0 COMMENT '份数',
+  `options` json NULL COMMENT '规格',
+  `atta_id` int UNSIGNED NULL DEFAULT NULL COMMENT '附件ID',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '订单详情表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sa_order_items
+-- ----------------------------
+INSERT INTO `sa_order_items` VALUES (1, 1, '合作后外部群标准话术_1753422065862_.pdf', 1.00, 7.00, 7, 1, NULL, 147, '2025-07-25 17:36:28', '2025-07-25 17:36:28');
+INSERT INTO `sa_order_items` VALUES (2, 1, '合作后外部群标准话术_1753425041216_.pdf', 1.00, 7.00, 7, 1, NULL, 148, '2025-07-25 17:36:28', '2025-07-25 17:36:28');
+INSERT INTO `sa_order_items` VALUES (3, 2, '合作后外部群标准话术_1753422065862_.pdf', 1.00, 7.00, 7, 1, NULL, 147, '2025-07-25 17:38:21', '2025-07-25 17:38:21');
+INSERT INTO `sa_order_items` VALUES (4, 2, '合作后外部群标准话术_1753425041216_.pdf', 1.00, 7.00, 7, 1, NULL, 148, '2025-07-25 17:38:21', '2025-07-25 17:38:21');
+INSERT INTO `sa_order_items` VALUES (5, 3, '合作后外部群标准话术_1753422065862_.pdf', 1.00, 7.00, 7, 1, NULL, 147, '2025-07-25 17:38:46', '2025-07-25 17:38:46');
+INSERT INTO `sa_order_items` VALUES (6, 3, '合作后外部群标准话术_1753425041216_.pdf', 1.00, 7.00, 7, 1, NULL, 148, '2025-07-25 17:38:46', '2025-07-25 17:38:46');
+INSERT INTO `sa_order_items` VALUES (7, 4, '合作后外部群标准话术_1753422065862_.pdf', 1.00, 7.00, 7, 1, NULL, 147, '2025-07-25 17:39:45', '2025-07-25 17:39:45');
+INSERT INTO `sa_order_items` VALUES (8, 4, '合作后外部群标准话术_1753425041216_.pdf', 1.00, 7.00, 7, 1, NULL, 148, '2025-07-25 17:39:45', '2025-07-25 17:39:45');
+INSERT INTO `sa_order_items` VALUES (9, 5, '合作后外部群标准话术_1753422065862_.pdf', 1.00, 7.00, 7, 1, '[{\"id\": 1, \"name\": \"A4\", \"type\": \"paperSize\", \"price\": \"1.00\", \"value\": \"A4\"}, {\"id\": 6, \"name\": \"黑白\", \"type\": \"color\", \"price\": \"0.00\", \"value\": \"black_white\"}, {\"id\": 9, \"name\": \"单面\", \"type\": \"side\", \"price\": \"0.00\", \"value\": \"single\"}, {\"id\": 11, \"name\": \"普通纸\", \"type\": \"paperType\", \"price\": \"0.00\", \"value\": \"regular\"}, {\"id\": 12, \"name\": \"70g\", \"type\": \"paperWeight\", \"price\": \"0.00\", \"value\": \"70\"}, {\"id\": 18, \"name\": \"不装订\", \"type\": \"binding\", \"price\": \"0.00\", \"value\": \"none\"}, {\"id\": 19, \"name\": \"不缩印\", \"type\": \"multiPage\", \"price\": \"0.00\", \"value\": \"1\"}, {\"id\": 21, \"name\": \"皮纹纸\", \"type\": \"coverType\", \"price\": \"0.00\", \"value\": \"leathe\"}, {\"id\": 22, \"name\": \"深蓝\", \"type\": \"coverColor\", \"price\": \"0.00\", \"value\": \"darkBlue\"}, {\"id\": 23, \"name\": \"纯色封面\", \"type\": \"coverContent\", \"price\": \"0.00\", \"value\": \"plain\"}]', 147, '2025-07-25 17:41:29', '2025-07-25 17:41:29');
+INSERT INTO `sa_order_items` VALUES (10, 5, '合作后外部群标准话术_1753425041216_.pdf', 1.00, 7.00, 7, 1, '[{\"id\": 1, \"name\": \"A4\", \"type\": \"paperSize\", \"price\": \"1.00\", \"value\": \"A4\"}, {\"id\": 6, \"name\": \"黑白\", \"type\": \"color\", \"price\": \"0.00\", \"value\": \"black_white\"}, {\"id\": 9, \"name\": \"单面\", \"type\": \"side\", \"price\": \"0.00\", \"value\": \"single\"}, {\"id\": 11, \"name\": \"普通纸\", \"type\": \"paperType\", \"price\": \"0.00\", \"value\": \"regular\"}, {\"id\": 12, \"name\": \"70g\", \"type\": \"paperWeight\", \"price\": \"0.00\", \"value\": \"70\"}, {\"id\": 18, \"name\": \"不装订\", \"type\": \"binding\", \"price\": \"0.00\", \"value\": \"none\"}, {\"id\": 19, \"name\": \"不缩印\", \"type\": \"multiPage\", \"price\": \"0.00\", \"value\": \"1\"}, {\"id\": 21, \"name\": \"皮纹纸\", \"type\": \"coverType\", \"price\": \"0.00\", \"value\": \"leathe\"}, {\"id\": 22, \"name\": \"深蓝\", \"type\": \"coverColor\", \"price\": \"0.00\", \"value\": \"darkBlue\"}, {\"id\": 23, \"name\": \"纯色封面\", \"type\": \"coverContent\", \"price\": \"0.00\", \"value\": \"plain\"}]', 148, '2025-07-25 17:41:29', '2025-07-25 17:41:29');
+
+-- ----------------------------
+-- Table structure for sa_print_setting
+-- ----------------------------
+DROP TABLE IF EXISTS `sa_print_setting`;
+CREATE TABLE `sa_print_setting`  (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '选项类型',
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '选项名称',
+  `value` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '选项值',
+  `price` decimal(10, 2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '价格',
+  `sort` int UNSIGNED NOT NULL DEFAULT 0 COMMENT '排序',
+  `is_default` tinyint UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否默认',
+  `status` tinyint UNSIGNED NOT NULL DEFAULT 0 COMMENT '状态',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `delete_time` datetime NULL DEFAULT NULL COMMENT '删除时间',
+  `max_pages` int UNSIGNED NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_type`(`type` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 41 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '打印设置表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sa_print_setting
+-- ----------------------------
+INSERT INTO `sa_print_setting` VALUES (1, 'paperSize', 'A4', 'A4', 0.00, 1, 1, 1, '2025-07-16 14:19:26', '2025-07-28 14:12:11', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (2, 'paperSize', 'A3', 'A3', 0.00, 2, 2, 1, '2025-07-16 14:19:26', '2025-07-28 11:42:16', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (3, 'paperSize', 'A5', 'A5', 0.00, 3, 2, 1, '2025-07-16 14:19:26', '2025-07-28 11:42:20', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (4, 'paperSize', 'B4', 'B4', 0.00, 4, 2, 1, '2025-07-16 14:19:26', '2025-07-28 11:42:24', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (5, 'paperSize', 'B5', 'B5', 0.00, 5, 2, 1, '2025-07-16 14:19:26', '2025-07-22 15:16:33', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (6, 'color', '黑白', 'black_white', 0.00, 1, 1, 1, '2025-07-16 14:19:26', '2025-07-18 11:57:07', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (7, 'color', '鲜艳彩色', 'vibrant_color', 2.00, 2, 2, 1, '2025-07-16 14:19:26', '2025-07-18 11:56:21', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (8, 'color', '激光彩色', 'laser_color', 3.00, 3, 2, 1, '2025-07-16 14:19:26', '2025-07-18 11:39:17', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (9, 'side', '单面', 'single', 0.00, 1, 1, 1, '2025-07-16 14:19:26', '2025-07-22 15:16:42', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (10, 'side', '双面', 'double', 1.00, 2, 2, 1, '2025-07-16 14:19:26', '2025-07-22 15:16:47', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (11, 'paperType', '普通纸', 'regular', 1.00, 1, 1, 1, '2025-07-16 14:19:26', '2025-07-28 14:12:47', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (12, 'paperWeight', '70g', '70', 0.00, 1, 1, 1, '2025-07-16 14:19:26', '2025-07-22 15:18:27', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (13, 'paperWeight', '80g', '80', 0.50, 2, 2, 1, '2025-07-16 14:19:26', '2025-07-22 15:18:33', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (14, 'binding', '骑马钉', 'saddle_stitch', 2.00, 1, 2, 1, '2025-07-16 14:19:26', '2025-07-28 13:57:04', NULL, 60);
+INSERT INTO `sa_print_setting` VALUES (15, 'binding', '订书钉', 'staple', 1.00, 2, 2, 1, '2025-07-16 14:19:26', '2025-07-28 13:59:24', NULL, 200);
+INSERT INTO `sa_print_setting` VALUES (16, 'binding', '皮纹纸胶装', 'textured_binding', 5.00, 3, 2, 1, '2025-07-16 14:19:26', '2025-07-28 13:58:52', NULL, 600);
+INSERT INTO `sa_print_setting` VALUES (17, 'binding', '铁圈', 'wire_binding', 3.00, 4, 2, 1, '2025-07-16 14:19:26', '2025-07-28 13:58:31', NULL, 60);
+INSERT INTO `sa_print_setting` VALUES (18, 'binding', '不装订', 'none', 0.00, 5, 1, 1, '2025-07-16 14:19:26', '2025-07-18 11:57:36', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (19, 'multiPage', '不缩印', '1', 0.00, 1, 1, 1, '2025-07-22 14:29:52', '2025-07-24 16:01:42', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (21, 'coverType', '皮纹纸', 'leathe', 1.00, 1, 1, 1, '2025-07-22 14:48:06', '2025-07-28 11:45:14', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (22, 'coverColor', '深蓝', 'darkBlue', 0.00, 1, 1, 1, '2025-07-22 14:49:33', '2025-07-22 15:18:55', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (23, 'coverContent', '纯色封面', 'plain', 0.00, 1, 1, 1, '2025-07-22 14:49:57', '2025-07-28 14:37:28', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (24, 'paperType', '护眼纸', 'protection', 2.00, 2, 2, 1, '2025-07-24 11:31:57', '2025-07-28 11:42:56', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (25, 'coverType', '铜版纸', 'coated', 2.00, 2, 2, 1, '2025-07-24 11:34:24', '2025-07-28 11:45:23', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (26, 'coverColor', '深绿', 'darkGreen', 0.00, 2, 2, 1, '2025-07-24 11:56:11', '2025-07-28 11:46:02', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (27, 'coverColor', '浅绿', 'lightGreen', 0.00, 3, 2, 1, '2025-07-24 11:56:33', '2025-07-28 11:46:24', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (28, 'coverColor', '大红', 'red', 0.00, 4, 2, 1, '2025-07-24 11:57:20', '2025-07-28 11:46:06', NULL, 1);
+INSERT INTO `sa_print_setting` VALUES (29, 'coverColor', '白色', 'white', 0.00, 5, 2, 1, '2025-07-24 11:57:35', '2025-07-28 11:46:20', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (30, 'coverColor', '浅黄', 'lightYellow', 0.00, 6, 2, 1, '2025-07-24 11:57:47', '2025-07-28 11:46:11', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (31, 'coverColor', '浅蓝', 'lightBlue', 0.00, 7, 2, 1, '2025-07-24 11:58:16', '2025-07-28 11:46:16', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (32, 'coverContent', '文字封面', 'text', 0.00, 2, 2, 1, '2025-07-24 14:37:01', '2025-07-28 11:45:38', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (33, 'coverContent', '文件首页为封面', 'firstPage', 0.00, 3, 2, 1, '2025-07-24 14:37:41', '2025-07-28 11:45:41', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (34, 'coverContent', '上传封面', 'upload', 0.00, 4, 2, 1, '2025-07-24 14:38:11', '2025-07-28 11:45:45', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (35, 'multiPage', '二页合一', '2', 0.00, 2, 2, 1, '2025-07-24 16:02:21', '2025-07-24 16:03:45', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (36, 'multiPage', '三页合一', '3', 0.00, 3, 2, 1, '2025-07-24 16:02:36', '2025-07-24 16:02:36', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (37, 'multiPage', '四页合一', '4', 0.00, 4, 2, 1, '2025-07-24 16:02:53', '2025-07-24 16:02:53', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (38, 'multiPage', '六页合一', '6', 0.00, 5, 2, 1, '2025-07-24 16:03:09', '2025-07-24 16:03:09', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (39, 'multiPage', '九页合一', '9', 0.00, 6, 2, 1, '2025-07-24 16:03:36', '2025-07-24 16:03:36', NULL, 0);
+INSERT INTO `sa_print_setting` VALUES (40, 'binding', '铜版纸胶装', 'steel', 5.00, 6, 2, 1, '2025-07-28 13:47:35', '2025-07-28 13:58:37', NULL, 600);
 
 -- ----------------------------
 -- Table structure for sa_sms
@@ -332,38 +480,53 @@ CREATE TABLE `sa_system_dict_data`  (
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `delete_time` datetime NULL DEFAULT NULL COMMENT '删除时间',
+  `color` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '颜色',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `type_id`(`type_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 30 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '字典数据表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 60 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '字典数据表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sa_system_dict_data
 -- ----------------------------
-INSERT INTO `sa_system_dict_data` VALUES (2, 2, '本地存储', '1', 'upload_mode', 99, 1, NULL, 1, 2, '2021-06-27 13:33:43', '2025-04-28 21:23:38', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (3, 2, '阿里云OSS', '2', 'upload_mode', 98, 1, NULL, 1, 2, '2021-06-27 13:33:55', '2025-04-28 21:25:13', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (4, 2, '七牛云', '3', 'upload_mode', 97, 1, NULL, 1, 1, '2021-06-27 13:34:07', '2025-03-28 19:35:25', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (5, 2, '腾讯云COS', '4', 'upload_mode', 96, 1, NULL, 1, 1, '2021-06-27 13:34:19', '2025-03-28 19:35:25', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (6, 2, '亚马逊S3', '5', 'upload_mode', 95, 1, '', 1, 1, '2021-06-27 13:34:19', '2025-04-04 23:05:31', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (7, 3, '正常', '1', 'data_status', 0, 1, '1为正常', 1, 1, '2021-06-27 13:36:51', '2021-06-27 13:37:01', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (8, 3, '停用', '2', 'data_status', 0, 1, '2为停用', 1, 1, '2021-06-27 13:37:10', '2021-06-27 13:37:10', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (9, 4, '统计页面', 'statistics', 'dashboard', 0, 1, '管理员用', 1, 1, '2021-08-09 12:53:53', '2023-11-16 11:39:17', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (10, 4, '工作台', 'work', 'dashboard', 0, 1, '员工使用', 1, 1, '2021-08-09 12:54:18', '2021-08-09 12:54:18', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (11, 5, '男', '1', 'gender', 0, 1, NULL, 1, 1, '2021-08-09 12:55:00', '2025-04-04 23:05:52', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (12, 5, '女', '2', 'gender', 0, 1, NULL, 1, 1, '2021-08-09 12:55:08', '2025-04-04 23:05:52', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (13, 5, '未知', '3', 'gender', 0, 1, NULL, 1, 1, '2021-08-09 12:55:16', '2025-04-04 23:05:52', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (14, 7, '通知', '1', 'backend_notice_type', 2, 1, NULL, 1, 1, '2021-11-11 17:29:27', '2021-11-11 17:30:51', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (15, 7, '公告', '2', 'backend_notice_type', 1, 1, NULL, 1, 1, '2021-11-11 17:31:42', '2021-11-11 17:31:42', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (16, 12, '图片', 'image', 'attachment_type', 10, 1, NULL, 1, 1, '2022-03-17 14:49:59', '2022-03-17 14:49:59', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (17, 12, '文档', 'text', 'attachment_type', 9, 1, NULL, 1, 1, '2022-03-17 14:50:20', '2022-03-17 14:50:49', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (18, 12, '音频', 'audio', 'attachment_type', 8, 1, NULL, 1, 1, '2022-03-17 14:50:37', '2022-03-17 14:50:52', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (19, 12, '视频', 'video', 'attachment_type', 7, 1, NULL, 1, 1, '2022-03-17 14:50:45', '2022-03-17 14:50:57', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (20, 12, '应用程序', 'application', 'attachment_type', 6, 1, NULL, 1, 1, '2022-03-17 14:50:52', '2022-03-17 14:50:59', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (21, 13, '菜单', 'M', 'menu_type', 100, 1, '', 1, 1, '2024-07-31 10:34:12', '2024-07-31 10:34:12', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (22, 13, '按钮', 'B', 'menu_type', 100, 1, '', 1, 1, '2024-07-31 10:34:20', '2024-07-31 10:34:20', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (23, 13, '外链', 'L', 'menu_type', 100, 1, '', 1, 1, '2024-07-31 10:34:27', '2024-07-31 10:34:27', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (24, 13, 'iFrame', 'I', 'menu_type', 100, 1, '', 1, 1, '2024-07-31 10:34:51', '2024-07-31 10:34:51', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (25, 14, '是', '1', 'yes_or_no', 100, 1, '', 1, 1, '2024-07-31 10:35:17', '2024-07-31 10:35:17', NULL);
-INSERT INTO `sa_system_dict_data` VALUES (26, 14, '否', '2', 'yes_or_no', 100, 1, '', 1, 1, '2024-07-31 10:35:22', '2024-07-31 10:35:22', NULL);
+INSERT INTO `sa_system_dict_data` VALUES (2, 2, '本地存储', '1', 'upload_mode', 99, 1, NULL, 1, 2, '2021-06-27 13:33:43', '2025-04-28 21:23:38', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (3, 2, '阿里云OSS', '2', 'upload_mode', 98, 1, NULL, 1, 2, '2021-06-27 13:33:55', '2025-04-28 21:25:13', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (4, 2, '七牛云', '3', 'upload_mode', 97, 1, NULL, 1, 1, '2021-06-27 13:34:07', '2025-03-28 19:35:25', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (5, 2, '腾讯云COS', '4', 'upload_mode', 96, 1, NULL, 1, 1, '2021-06-27 13:34:19', '2025-03-28 19:35:25', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (6, 2, '亚马逊S3', '5', 'upload_mode', 95, 1, '', 1, 1, '2021-06-27 13:34:19', '2025-04-04 23:05:31', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (7, 3, '正常', '1', 'data_status', 0, 1, '1为正常', 1, 1, '2021-06-27 13:36:51', '2021-06-27 13:37:01', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (8, 3, '停用', '2', 'data_status', 0, 1, '2为停用', 1, 1, '2021-06-27 13:37:10', '2021-06-27 13:37:10', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (9, 4, '统计页面', 'statistics', 'dashboard', 0, 1, '管理员用', 1, 1, '2021-08-09 12:53:53', '2023-11-16 11:39:17', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (10, 4, '工作台', 'work', 'dashboard', 0, 1, '员工使用', 1, 1, '2021-08-09 12:54:18', '2021-08-09 12:54:18', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (11, 5, '男', '1', 'gender', 0, 1, NULL, 1, 1, '2021-08-09 12:55:00', '2025-04-04 23:05:52', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (12, 5, '女', '2', 'gender', 0, 1, NULL, 1, 1, '2021-08-09 12:55:08', '2025-04-04 23:05:52', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (13, 5, '未知', '3', 'gender', 0, 1, NULL, 1, 1, '2021-08-09 12:55:16', '2025-04-04 23:05:52', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (14, 7, '通知', '1', 'backend_notice_type', 2, 1, NULL, 1, 1, '2021-11-11 17:29:27', '2021-11-11 17:30:51', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (15, 7, '公告', '2', 'backend_notice_type', 1, 1, NULL, 1, 1, '2021-11-11 17:31:42', '2021-11-11 17:31:42', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (16, 12, '图片', 'image', 'attachment_type', 10, 1, NULL, 1, 1, '2022-03-17 14:49:59', '2022-03-17 14:49:59', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (17, 12, '文档', 'text', 'attachment_type', 9, 1, NULL, 1, 1, '2022-03-17 14:50:20', '2022-03-17 14:50:49', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (18, 12, '音频', 'audio', 'attachment_type', 8, 1, NULL, 1, 1, '2022-03-17 14:50:37', '2022-03-17 14:50:52', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (19, 12, '视频', 'video', 'attachment_type', 7, 1, NULL, 1, 1, '2022-03-17 14:50:45', '2022-03-17 14:50:57', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (20, 12, '应用程序', 'application', 'attachment_type', 6, 1, NULL, 1, 1, '2022-03-17 14:50:52', '2022-03-17 14:50:59', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (21, 13, '菜单', 'M', 'menu_type', 100, 1, '', 1, 1, '2024-07-31 10:34:12', '2024-07-31 10:34:12', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (22, 13, '按钮', 'B', 'menu_type', 100, 1, '', 1, 1, '2024-07-31 10:34:20', '2024-07-31 10:34:20', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (23, 13, '外链', 'L', 'menu_type', 100, 1, '', 1, 1, '2024-07-31 10:34:27', '2024-07-31 10:34:27', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (24, 13, 'iFrame', 'I', 'menu_type', 100, 1, '', 1, 1, '2024-07-31 10:34:51', '2024-07-31 10:34:51', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (25, 14, '是', '1', 'yes_or_no', 100, 1, '', 1, 1, '2024-07-31 10:35:17', '2024-07-31 10:35:17', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (26, 14, '否', '2', 'yes_or_no', 100, 1, '', 1, 1, '2024-07-31 10:35:22', '2024-07-31 10:35:22', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (45, 17, '纸张大小', 'paperSize', 'print_option_type', 1, 1, NULL, NULL, NULL, '2025-07-16 14:32:59', '2025-07-16 14:32:59', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (46, 17, '色彩', 'color', 'print_option_type', 2, 1, NULL, NULL, NULL, '2025-07-16 14:32:59', '2025-07-16 14:32:59', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (47, 17, '单双面', 'side', 'print_option_type', 3, 1, NULL, NULL, NULL, '2025-07-16 14:32:59', '2025-07-16 14:32:59', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (48, 17, '纸张类型', 'paperType', 'print_option_type', 4, 1, NULL, NULL, NULL, '2025-07-16 14:32:59', '2025-07-16 14:32:59', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (49, 17, '纸张克重', 'paperWeight', 'print_option_type', 5, 1, NULL, NULL, NULL, '2025-07-16 14:32:59', '2025-07-16 14:32:59', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (50, 17, '份数', 'copies', 'print_option_type', 6, 1, NULL, NULL, NULL, '2025-07-16 14:32:59', '2025-07-16 14:32:59', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (52, 17, '装订', 'binding', 'print_option_type', 8, 1, NULL, NULL, NULL, '2025-07-16 14:32:59', '2025-07-16 14:32:59', NULL, NULL);
+INSERT INTO `sa_system_dict_data` VALUES (53, 18, '禁用', '1', 'is_disable', 1, 1, '', NULL, 1, '2025-07-16 14:34:10', '2025-07-18 11:12:57', NULL, '#141514');
+INSERT INTO `sa_system_dict_data` VALUES (54, 18, '正常', '0', 'is_disable', 2, 1, '', NULL, 1, '2025-07-16 14:34:10', '2025-07-18 11:38:29', NULL, '#3FBB4D');
+INSERT INTO `sa_system_dict_data` VALUES (55, 17, '缩印', 'multiPage', 'print_option_type', 9, 1, '', 1, 1, '2025-07-22 14:28:54', '2025-07-22 14:40:54', NULL, '');
+INSERT INTO `sa_system_dict_data` VALUES (56, 17, '装订类型', 'binding', 'print_option_type', 10, 1, '', 1, 1, '2025-07-22 14:41:38', '2025-07-22 14:42:09', NULL, '');
+INSERT INTO `sa_system_dict_data` VALUES (57, 17, '封面类型', 'coverType', 'print_option_type', 11, 1, '', 1, 1, '2025-07-22 14:42:33', '2025-07-22 14:42:33', NULL, '');
+INSERT INTO `sa_system_dict_data` VALUES (58, 17, '封面颜色', 'coverColor', 'print_option_type', 12, 1, '', 1, 1, '2025-07-22 14:42:52', '2025-07-22 14:42:52', NULL, '');
+INSERT INTO `sa_system_dict_data` VALUES (59, 17, '封面内容', 'coverContent', 'print_option_type', 13, 1, '', 1, 1, '2025-07-22 14:43:20', '2025-07-22 14:43:20', NULL, '');
 
 -- ----------------------------
 -- Table structure for sa_system_dict_type
@@ -381,7 +544,7 @@ CREATE TABLE `sa_system_dict_type`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `delete_time` datetime NULL DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '字典类型表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '字典类型表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sa_system_dict_type
@@ -394,6 +557,8 @@ INSERT INTO `sa_system_dict_type` VALUES (7, '后台公告类型', 'backend_noti
 INSERT INTO `sa_system_dict_type` VALUES (12, '附件类型', 'attachment_type', 1, NULL, 1, 1, '2021-06-27 13:33:29', '2022-03-17 14:49:23', NULL);
 INSERT INTO `sa_system_dict_type` VALUES (13, '菜单类型', 'menu_type', 1, '', 1, 1, '2024-07-31 10:33:37', '2024-07-31 10:33:37', NULL);
 INSERT INTO `sa_system_dict_type` VALUES (14, '是否', 'yes_or_no', 1, '', 1, 1, '2024-07-31 10:35:07', '2024-07-31 10:35:07', NULL);
+INSERT INTO `sa_system_dict_type` VALUES (17, '打印选项类型', 'print_option_type', 1, '打印设置选项类型', 1, 1, '2025-07-16 14:30:44', '2025-07-16 14:30:44', NULL);
+INSERT INTO `sa_system_dict_type` VALUES (18, '是否禁用', 'is_disable', 1, '是否禁用', NULL, 1, '2025-07-16 14:33:26', '2025-07-18 11:06:49', NULL);
 
 -- ----------------------------
 -- Table structure for sa_system_login_log
@@ -417,11 +582,24 @@ CREATE TABLE `sa_system_login_log`  (
   `delete_time` datetime NULL DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `username`(`username` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '登录日志表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 15 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '登录日志表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sa_system_login_log
 -- ----------------------------
+INSERT INTO `sa_system_login_log` VALUES (2, 'admin', '172.18.0.1', '内网IP', 'Win', 'Chrome', 1, '登录成功', '2025-07-18 11:42:24', NULL, 1, 1, '2025-07-18 11:42:25', '2025-07-18 11:42:25', NULL);
+INSERT INTO `sa_system_login_log` VALUES (3, 'admin', '172.18.0.1', '内网IP', 'Win', 'Chrome', 1, '登录成功', '2025-07-18 14:38:51', NULL, 1, 1, '2025-07-18 14:38:51', '2025-07-18 14:38:51', NULL);
+INSERT INTO `sa_system_login_log` VALUES (4, 'admin', '172.18.0.1', '内网IP', 'Win', 'Chrome', 1, '登录成功', '2025-07-21 09:12:26', NULL, 1, 1, '2025-07-21 09:12:27', '2025-07-21 09:12:27', NULL);
+INSERT INTO `sa_system_login_log` VALUES (5, 'admin', '172.18.0.1', '内网IP', 'Win', 'Chrome', 1, '登录成功', '2025-07-21 15:53:21', NULL, 1, 1, '2025-07-21 15:53:21', '2025-07-21 15:53:21', NULL);
+INSERT INTO `sa_system_login_log` VALUES (6, 'admin', '172.18.0.1', '内网IP', 'Win', 'Chrome', 1, '登录成功', '2025-07-22 14:28:06', NULL, 1, 1, '2025-07-22 14:28:07', '2025-07-22 14:28:07', NULL);
+INSERT INTO `sa_system_login_log` VALUES (7, 'admin', '172.18.0.1', '内网IP', 'Win', 'Chrome', 1, '登录成功', '2025-07-24 11:23:38', NULL, 1, 1, '2025-07-24 11:23:39', '2025-07-24 11:23:39', NULL);
+INSERT INTO `sa_system_login_log` VALUES (8, 'admin', '172.18.0.1', '内网IP', 'Win', 'Chrome', 1, '登录成功', '2025-07-24 14:36:10', NULL, 1, 1, '2025-07-24 14:36:11', '2025-07-24 14:36:11', NULL);
+INSERT INTO `sa_system_login_log` VALUES (9, 'admin', '172.18.0.1', '内网IP', 'Win', 'Chrome', 1, '登录成功', '2025-07-25 09:31:11', NULL, 1, 1, '2025-07-25 09:31:11', '2025-07-25 09:31:11', NULL);
+INSERT INTO `sa_system_login_log` VALUES (10, 'admin', '172.18.0.1', '内网IP', 'Win', 'Chrome', 1, '登录成功', '2025-07-28 10:29:36', NULL, 1, 1, '2025-07-28 10:29:36', '2025-07-28 10:29:36', NULL);
+INSERT INTO `sa_system_login_log` VALUES (11, 'admin', '172.18.0.1', '内网IP', 'Win', 'Chrome', 1, '登录成功', '2025-07-28 13:37:11', NULL, 1, 1, '2025-07-28 13:37:12', '2025-07-28 13:37:12', NULL);
+INSERT INTO `sa_system_login_log` VALUES (12, 'admin', '172.18.0.1', '内网IP', 'Win', 'Chrome', 1, '登录成功', '2025-07-28 13:39:36', NULL, 1, 1, '2025-07-28 13:39:37', '2025-07-28 13:39:37', NULL);
+INSERT INTO `sa_system_login_log` VALUES (13, 'admin', '172.18.0.1', '内网IP', 'Win', 'Chrome', 1, '登录成功', '2025-07-28 14:05:22', NULL, 1, 1, '2025-07-28 14:05:22', '2025-07-28 14:05:22', NULL);
+INSERT INTO `sa_system_login_log` VALUES (14, 'admin', '172.18.0.1', '内网IP', 'Win', 'Chrome', 1, '登录成功', '2025-07-28 16:22:58', NULL, 1, 1, '2025-07-28 16:22:59', '2025-07-28 16:22:59', NULL);
 
 -- ----------------------------
 -- Table structure for sa_system_mail
@@ -474,7 +652,7 @@ CREATE TABLE `sa_system_menu`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `delete_time` datetime NULL DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6000 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '菜单信息表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 6012 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '菜单信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sa_system_menu
@@ -579,6 +757,18 @@ INSERT INTO `sa_system_menu` VALUES (5005, 5000, '0,5000', '配置读取', '/cor
 INSERT INTO `sa_system_menu` VALUES (5100, 0, '0', '附加数据', 'addition', 'IconRelation', 'addition', '', NULL, 1, 1, 'M', 0, NULL, 2, 0, '', 1, 1, '2025-04-30 13:56:46', '2025-04-30 13:56:46', NULL);
 INSERT INTO `sa_system_menu` VALUES (5101, 5100, '0,5100', '用户列表接口', '/core/system/getUserList', '', '', '', NULL, 2, 1, 'B', 0, NULL, 1, 0, '', 1, 1, '2025-04-30 13:56:46', '2025-04-30 13:56:46', NULL);
 INSERT INTO `sa_system_menu` VALUES (5102, 5100, '0,5100', '用户信息接口', '/core/system/getUserInfoByIds', '', '', '', NULL, 2, 1, 'B', 0, NULL, 1, 0, '', 1, 1, '2025-04-30 13:56:46', '2025-04-30 13:56:46', NULL);
+INSERT INTO `sa_system_menu` VALUES (6000, 0, '0,0', '打印设置', '', 'icon-home', 'printSetting/setting', 'printSetting/setting/index', NULL, 2, 1, 'M', 0, NULL, 1, 0, NULL, NULL, NULL, '2025-07-18 10:57:18', '2025-07-18 10:57:18', NULL);
+INSERT INTO `sa_system_menu` VALUES (6001, 6000, '0,6000', '打印设置列表', '/backend/printSetting/PrintSetting/index', NULL, NULL, NULL, NULL, 2, 1, 'B', 0, NULL, 1, 0, NULL, NULL, NULL, '2025-07-18 10:57:18', '2025-07-18 10:57:18', NULL);
+INSERT INTO `sa_system_menu` VALUES (6002, 6000, '0,6000', '打印设置保存', '/backend/printSetting/PrintSetting/save', NULL, NULL, NULL, NULL, 2, 1, 'B', 0, NULL, 1, 0, NULL, NULL, NULL, '2025-07-18 10:57:18', '2025-07-18 10:57:18', NULL);
+INSERT INTO `sa_system_menu` VALUES (6003, 6000, '0,6000', '打印设置更新', '/backend/printSetting/PrintSetting/update', NULL, NULL, NULL, NULL, 2, 1, 'B', 0, NULL, 1, 0, NULL, NULL, NULL, '2025-07-18 10:57:18', '2025-07-18 10:57:18', NULL);
+INSERT INTO `sa_system_menu` VALUES (6004, 6000, '0,6000', '打印设置读取', '/backend/printSetting/PrintSetting/read', NULL, NULL, NULL, NULL, 2, 1, 'B', 0, NULL, 1, 0, NULL, NULL, NULL, '2025-07-18 10:57:18', '2025-07-18 10:57:18', NULL);
+INSERT INTO `sa_system_menu` VALUES (6005, 6000, '0,6000', '打印设置删除', '/backend/printSetting/PrintSetting/destroy', NULL, NULL, NULL, NULL, 2, 1, 'B', 0, NULL, 1, 0, NULL, NULL, NULL, '2025-07-18 10:57:18', '2025-07-18 10:57:18', NULL);
+INSERT INTO `sa_system_menu` VALUES (6006, 0, '0,0', '优惠券模板表', '', 'icon-home', 'CouponTemplate/template', 'CouponTemplate/template/index', NULL, 2, 1, 'M', 0, NULL, 1, 0, NULL, NULL, NULL, '2025-07-28 14:47:56', '2025-07-28 14:47:56', NULL);
+INSERT INTO `sa_system_menu` VALUES (6007, 6006, '0,6006', '优惠券模板表列表', '/backend/CouponTemplate/CouponTemplate/index', NULL, NULL, NULL, NULL, 2, 1, 'B', 0, NULL, 1, 0, NULL, NULL, NULL, '2025-07-28 14:47:56', '2025-07-28 14:47:56', NULL);
+INSERT INTO `sa_system_menu` VALUES (6008, 6006, '0,6006', '优惠券模板表保存', '/backend/CouponTemplate/CouponTemplate/save', NULL, NULL, NULL, NULL, 2, 1, 'B', 0, NULL, 1, 0, NULL, NULL, NULL, '2025-07-28 14:47:56', '2025-07-28 14:47:56', NULL);
+INSERT INTO `sa_system_menu` VALUES (6009, 6006, '0,6006', '优惠券模板表更新', '/backend/CouponTemplate/CouponTemplate/update', NULL, NULL, NULL, NULL, 2, 1, 'B', 0, NULL, 1, 0, NULL, NULL, NULL, '2025-07-28 14:47:56', '2025-07-28 14:47:56', NULL);
+INSERT INTO `sa_system_menu` VALUES (6010, 6006, '0,6006', '优惠券模板表读取', '/backend/CouponTemplate/CouponTemplate/read', NULL, NULL, NULL, NULL, 2, 1, 'B', 0, NULL, 1, 0, NULL, NULL, NULL, '2025-07-28 14:47:56', '2025-07-28 14:47:56', NULL);
+INSERT INTO `sa_system_menu` VALUES (6011, 6006, '0,6006', '优惠券模板表删除', '/backend/CouponTemplate/CouponTemplate/destroy', NULL, NULL, NULL, NULL, 2, 1, 'B', 0, NULL, 1, 0, NULL, NULL, NULL, '2025-07-28 14:47:56', '2025-07-28 14:47:56', NULL);
 
 -- ----------------------------
 -- Table structure for sa_system_notice
@@ -628,11 +818,41 @@ CREATE TABLE `sa_system_oper_log`  (
   `delete_time` datetime NULL DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `username`(`username` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '操作日志表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 38 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '操作日志表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sa_system_oper_log
 -- ----------------------------
+INSERT INTO `sa_system_oper_log` VALUES (8, 'admin', 'saiadmin', 'PUT', '/core/dictdata/update?id=54', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":\"54\",\"type_id\":18,\"code\":\"\",\"label\":\"否\",\"value\":\"0\",\"color\":\"#3F3F3F\",\"status\":1,\"sort\":2,\"remark\":\"\"}', NULL, 1, 1, '2025-07-18 10:45:29', '2025-07-18 10:45:29', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (9, 'admin', 'saiadmin', 'PUT', '/core/dictdata/update?id=52', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":\"52\",\"type_id\":17,\"code\":\"\",\"label\":\"装订\",\"value\":\"binding\",\"color\":\"#626262\",\"status\":1,\"sort\":8,\"remark\":\"\"}', NULL, 1, 1, '2025-07-18 10:47:02', '2025-07-18 10:47:02', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (10, 'admin', 'saiadmin', 'PUT', '/core/dictdata/update?id=54', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":\"54\",\"type_id\":18,\"code\":\"yes_no\",\"label\":\"否\",\"value\":\"0\",\"color\":\"#575757\",\"status\":1,\"sort\":2,\"remark\":\"\"}', NULL, 1, 1, '2025-07-18 10:47:13', '2025-07-18 10:47:13', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (11, 'admin', 'saiadmin', 'PUT', '/core/dictdata/update?id=53', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":\"53\",\"type_id\":18,\"code\":\"yes_no\",\"label\":\"是\",\"value\":\"1\",\"color\":\"#C39D3B\",\"status\":1,\"sort\":1,\"remark\":\"\"}', NULL, 1, 1, '2025-07-18 10:47:27', '2025-07-18 10:47:27', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (12, 'admin', 'saiadmin', 'POST', '/tool/code/loadtable', '未命名业务', '172.18.0.1', '内网IP', '{\"source\":\"mysql\",\"names\":[{\"name\":\"sa_print_setting\",\"comment\":\"打印设置表\",\"sourceName\":\"sa_print_setting\"}]}', NULL, 1, 1, '2025-07-18 10:52:09', '2025-07-18 10:52:09', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (13, 'admin', 'saiadmin', 'PUT', '/tool/code/update?id=1', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":\"1\",\"generate_menus\":[\"index\",\"save\",\"update\",\"read\",\"delete\"],\"columns\":[{\"id\":1,\"table_id\":1,\"column_name\":\"id\",\"column_comment\":\"ID\",\"column_type\":\"int\",\"default_value\":null,\"is_pk\":2,\"is_required\":true,\"is_insert\":false,\"is_edit\":false,\"is_list\":false,\"is_query\":false,\"is_sort\":false,\"query_type\":\"eq\",\"view_type\":\"input\",\"dict_type\":null,\"allow_roles\":null,\"options\":null,\"sort\":10,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-18 10:52:09\",\"update_time\":\"2025-07-18 10:52:09\"},{\"id\":2,\"table_id\":1,\"column_name\":\"type\",\"column_comment\":\"选项类型\",\"column_type\":\"varchar\",\"default_value\":null,\"is_pk\":1,\"is_required\":true,\"is_insert\":false,\"is_edit\":false,\"is_list\":false,\"is_query\":true,\"is_sort\":false,\"query_type\":\"eq\",\"view_type\":\"saSelect\",\"dict_type\":\"print_option_type\",\"allow_roles\":null,\"options\":null,\"sort\":9,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-18 10:52:09\",\"update_time\":\"2025-07-18 10:52:09\"},{\"id\":3,\"table_id\":1,\"column_name\":\"name\",\"column_comment\":\"选项名称\",\"column_type\":\"varchar\",\"default_value\":null,\"is_pk\":1,\"is_required\":true,\"is_insert\":true,\"is_edit\":true,\"is_list\":true,\"is_query\":true,\"is_sort\":false,\"query_type\":\"like\",\"view_type\":\"input\",\"dict_type\":null,\"allow_roles\":null,\"options\":null,\"sort\":8,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-18 10:52:09\",\"update_time\":\"2025-07-18 10:52:09\"},{\"id\":4,\"table_id\":1,\"column_name\":\"value\",\"column_comment\":\"选项值\",\"column_type\":\"varchar\",\"default_value\":null,\"is_pk\":1,\"is_required\":true,\"is_insert\":true,\"is_edit\":true,\"is_list\":true,\"is_query\":false,\"is_sort\":false,\"query_type\":\"eq\",\"view_type\":\"input\",\"dict_type\":null,\"allow_roles\":null,\"options\":null,\"sort\":7,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-18 10:52:09\",\"update_time\":\"2025-07-18 10:52:09\"},{\"id\":5,\"table_id\":1,\"column_name\":\"price\",\"column_comment\":\"价格\",\"column_type\":\"decimal\",\"default_value\":\"0.00\",\"is_pk\":1,\"is_required\":true,\"is_insert\":true,\"is_edit\":true,\"is_list\":true,\"is_query\":false,\"is_sort\":false,\"query_type\":\"eq\",\"view_type\":\"input\",\"dict_type\":null,\"allow_roles\":null,\"options\":null,\"sort\":6,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-18 10:52:09\",\"update_time\":\"2025-07-18 10:52:09\"},{\"id\":6,\"table_id\":1,\"column_name\":\"sort\",\"column_comment\":\"排序\",\"column_type\":\"int\",\"default_value\":\"0\",\"is_pk\":1,\"is_required\":true,\"is_insert\":true,\"is_edit\":true,\"is_list\":true,\"is_query\":false,\"is_sort\":false,\"query_type\":\"eq\",\"view_type\":\"input\",\"dict_type\":null,\"allow_roles\":null,\"options\":null,\"sort\":5,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-18 10:52:09\",\"update_time\":\"2025-07-18 10:52:09\"},{\"id\":7,\"table_id\":1,\"column_name\":\"is_default\",\"column_comment\":\"是否默认\",\"column_type\":\"tinyint\",\"default_value\":\"0\",\"is_pk\":1,\"is_required\":true,\"is_insert\":true,\"is_edit\":true,\"is_list\":true,\"is_query\":false,\"is_sort\":false,\"query_type\":\"eq\",\"view_type\":\"saSelect\",\"dict_type\":\"yes_or_no\",\"allow_roles\":null,\"options\":null,\"sort\":4,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-18 10:52:09\",\"update_time\":\"2025-07-18 10:52:09\"},{\"id\":8,\"table_id\":1,\"column_name\":\"status\",\"column_comment\":\"状态\",\"column_type\":\"tinyint\",\"default_value\":\"0\",\"is_pk\":1,\"is_required\":true,\"is_insert\":true,\"is_edit\":true,\"is_list\":true,\"is_query\":false,\"is_sort\":false,\"query_type\":\"eq\",\"view_type\":\"saSelect\",\"dict_type\":\"yes_no\",\"allow_roles\":null,\"options\":null,\"sort\":3,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-18 10:52:09\",\"update_time\":\"2025-07-18 10:52:09\"},{\"id\":9,\"table_id\":1,\"column_name\":\"create_time\",\"column_comment\":\"创建时间\",\"column_type\":\"datetime\",\"default_value\":null,\"is_pk\":1,\"is_required\":false,\"is_insert\":false,\"is_edit\":false,\"is_list\":false,\"is_query\":true,\"is_sort\":false,\"query_type\":\"between\",\"view_type\":\"date\",\"dict_type\":null,\"allow_roles\":null,\"options\":{\"mode\":\"date\",\"showTime\":true},\"sort\":2,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-18 10:52:09\",\"update_time\":\"2025-07-18 10:52:09\"},{\"id\":10,\"table_id\":1,\"column_name\":\"update_time\",\"column_comment\":\"更新时间\",\"column_type\":\"datetime\",\"default_value\":null,\"is_pk\":1,\"is_required\":false,\"is_insert\":false,\"is_edit\":false,\"is_list\":false,\"is_query\":false,\"is_sort\":false,\"query_type\":\"between\",\"view_type\":\"date\",\"dict_type\":null,\"allow_roles\":null,\"options\":{\"mode\":\"date\",\"showTime\":true},\"sort\":1,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-18 10:52:09\",\"update_time\":\"2025-07-18 10:52:09\"}],\"table_name\":\"sa_print_setting\",\"table_comment\":\"打印设置表\",\"stub\":\"saiadmin\",\"template\":\"app\",\"namespace\":\"printSetting\",\"package_name\":\"\",\"business_name\":\"setting\",\"class_name\":\"PrintSetting\",\"menu_name\":\"打印设置\",\"belong_menu_id\":0,\"tpl_category\":\"single\",\"generate_type\":1,\"generate_path\":\"saiadmin-vue\",\"generate_model\":1,\"build_menu\":1,\"component_type\":1,\"options\":{\"relations\":[]},\"form_width\":600,\"is_full\":1,\"remark\":null,\"source\":\"mysql\",\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-18 10:52:09\",\"update_time\":\"2025-07-18 10:52:09\"}', NULL, 1, 1, '2025-07-18 10:53:52', '2025-07-18 10:53:52', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (14, 'admin', 'saiadmin', 'POST', '/tool/code/generate', '未命名业务', '172.18.0.1', '内网IP', '{\"ids\":[\"1\"]}', NULL, 1, 1, '2025-07-18 10:56:08', '2025-07-18 10:56:08', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (15, 'admin', 'saiadmin', 'PUT', '/core/dicttype/update?id=18', '数据字典更新', '172.18.0.1', '内网IP', '{\"id\":\"18\",\"name\":\"是否\",\"code\":\"is_disable\",\"status\":1,\"remark\":\"是否禁用\"}', NULL, 1, 1, '2025-07-18 11:06:43', '2025-07-18 11:06:43', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (16, 'admin', 'saiadmin', 'PUT', '/core/dicttype/update?id=18', '数据字典更新', '172.18.0.1', '内网IP', '{\"id\":\"18\",\"name\":\"是否禁用\",\"code\":\"is_disable\",\"status\":1,\"remark\":\"是否禁用\"}', NULL, 1, 1, '2025-07-18 11:06:49', '2025-07-18 11:06:49', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (17, 'admin', 'saiadmin', 'PUT', '/core/dictdata/update?id=54', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":\"54\",\"type_id\":18,\"code\":\"is_disable\",\"label\":\"禁用\",\"value\":\"0\",\"color\":\"\",\"status\":1,\"sort\":2,\"remark\":\"\"}', NULL, 1, 1, '2025-07-18 11:06:59', '2025-07-18 11:06:59', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (18, 'admin', 'saiadmin', 'PUT', '/core/dictdata/update?id=53', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":\"53\",\"type_id\":18,\"code\":\"is_disable\",\"label\":\"禁用\",\"value\":\"1\",\"color\":\"\",\"status\":1,\"sort\":1,\"remark\":\"\"}', NULL, 1, 1, '2025-07-18 11:07:08', '2025-07-18 11:07:08', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (19, 'admin', 'saiadmin', 'PUT', '/core/dictdata/update?id=54', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":\"54\",\"type_id\":18,\"code\":\"is_disable\",\"label\":\"正常\",\"value\":\"0\",\"color\":\"\",\"status\":1,\"sort\":2,\"remark\":\"\"}', NULL, 1, 1, '2025-07-18 11:07:13', '2025-07-18 11:07:13', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (20, 'admin', 'saiadmin', 'PUT', '/core/dictdata/update?id=54', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":\"54\",\"type_id\":18,\"code\":\"is_disable\",\"label\":\"正常\",\"value\":\"0\",\"color\":\"#434343\",\"status\":1,\"sort\":2,\"remark\":\"\"}', NULL, 1, 1, '2025-07-18 11:12:38', '2025-07-18 11:12:38', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (21, 'admin', 'saiadmin', 'PUT', '/core/dictdata/update?id=54', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":\"54\",\"type_id\":18,\"code\":\"is_disable\",\"label\":\"正常\",\"value\":\"0\",\"color\":\"#3FBB4D\",\"status\":1,\"sort\":2,\"remark\":\"\"}', NULL, 1, 1, '2025-07-18 11:12:51', '2025-07-18 11:12:51', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (22, 'admin', 'saiadmin', 'PUT', '/core/dictdata/update?id=53', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":\"53\",\"type_id\":18,\"code\":\"is_disable\",\"label\":\"禁用\",\"value\":\"1\",\"color\":\"#141514\",\"status\":1,\"sort\":1,\"remark\":\"\"}', NULL, 1, 1, '2025-07-18 11:12:57', '2025-07-18 11:12:57', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (23, 'admin', 'saiadmin', 'POST', '/core/dictdata/changestatus', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":54,\"status\":\"2\"}', NULL, 1, 1, '2025-07-18 11:38:26', '2025-07-18 11:38:26', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (24, 'admin', 'saiadmin', 'POST', '/core/dictdata/changestatus', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":54,\"status\":\"1\"}', NULL, 1, 1, '2025-07-18 11:38:27', '2025-07-18 11:38:27', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (25, 'admin', 'saiadmin', 'POST', '/core/dictdata/changestatus', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":54,\"status\":\"2\"}', NULL, 1, 1, '2025-07-18 11:38:28', '2025-07-18 11:38:28', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (26, 'admin', 'saiadmin', 'POST', '/core/dictdata/changestatus', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":54,\"status\":\"1\"}', NULL, 1, 1, '2025-07-18 11:38:29', '2025-07-18 11:38:29', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (27, 'admin', 'saiadmin', 'POST', '/core/dictdata/save', '未命名业务', '172.18.0.1', '内网IP', '{\"type_id\":17,\"code\":\"print_option_type\",\"label\":\"缩印\",\"value\":\"multi_page\",\"color\":\"\",\"status\":1,\"sort\":100,\"remark\":\"\"}', NULL, 1, 1, '2025-07-22 14:28:54', '2025-07-22 14:28:54', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (28, 'admin', 'saiadmin', 'PUT', '/core/dictdata/update?id=55', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":\"55\",\"type_id\":17,\"code\":\"print_option_type\",\"label\":\"缩印\",\"value\":\"multi_page\",\"color\":\"\",\"status\":1,\"sort\":9,\"remark\":\"\"}', NULL, 1, 1, '2025-07-22 14:40:54', '2025-07-22 14:40:54', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (29, 'admin', 'saiadmin', 'POST', '/core/dictdata/save', '未命名业务', '172.18.0.1', '内网IP', '{\"type_id\":17,\"code\":\"print_option_type\",\"label\":\"封面类型\",\"value\":\"cover_type\",\"color\":\"\",\"status\":1,\"sort\":100,\"remark\":\"\"}', NULL, 1, 1, '2025-07-22 14:41:38', '2025-07-22 14:41:38', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (30, 'admin', 'saiadmin', 'PUT', '/core/dictdata/update?id=56', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":\"56\",\"type_id\":17,\"code\":\"print_option_type\",\"label\":\"装订类型\",\"value\":\"binding\",\"color\":\"\",\"status\":1,\"sort\":10,\"remark\":\"\"}', NULL, 1, 1, '2025-07-22 14:42:09', '2025-07-22 14:42:09', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (31, 'admin', 'saiadmin', 'POST', '/core/dictdata/save', '未命名业务', '172.18.0.1', '内网IP', '{\"type_id\":17,\"code\":\"print_option_type\",\"label\":\"封面类型\",\"value\":\"cover_type\",\"color\":\"\",\"status\":1,\"sort\":11,\"remark\":\"\"}', NULL, 1, 1, '2025-07-22 14:42:33', '2025-07-22 14:42:33', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (32, 'admin', 'saiadmin', 'POST', '/core/dictdata/save', '未命名业务', '172.18.0.1', '内网IP', '{\"type_id\":17,\"code\":\"print_option_type\",\"label\":\"封面颜色\",\"value\":\"cover_color\",\"color\":\"\",\"status\":1,\"sort\":12,\"remark\":\"\"}', NULL, 1, 1, '2025-07-22 14:42:52', '2025-07-22 14:42:52', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (33, 'admin', 'saiadmin', 'POST', '/core/dictdata/save', '未命名业务', '172.18.0.1', '内网IP', '{\"type_id\":17,\"code\":\"print_option_type\",\"label\":\"封面内容\",\"value\":\"cover_content\",\"color\":\"\",\"status\":1,\"sort\":13,\"remark\":\"\"}', NULL, 1, 1, '2025-07-22 14:43:20', '2025-07-22 14:43:20', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (34, 'admin', 'saiadmin', 'POST', '/tool/code/generate', '未命名业务', '172.18.0.1', '内网IP', '{\"ids\":[\"1\"]}', NULL, 1, 1, '2025-07-28 10:29:45', '2025-07-28 10:29:45', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (35, 'admin', 'saiadmin', 'POST', '/tool/code/loadtable', '未命名业务', '172.18.0.1', '内网IP', '{\"source\":\"mysql\",\"names\":[{\"name\":\"sa_coupon_template\",\"comment\":\"优惠券模板表\",\"sourceName\":\"sa_coupon_template\"}]}', NULL, 1, 1, '2025-07-28 14:45:25', '2025-07-28 14:45:25', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (36, 'admin', 'saiadmin', 'PUT', '/tool/code/update?id=2', '未命名业务', '172.18.0.1', '内网IP', '{\"id\":\"2\",\"generate_menus\":[\"index\",\"save\",\"update\",\"read\",\"delete\"],\"columns\":[{\"id\":11,\"table_id\":2,\"column_name\":\"id\",\"column_comment\":\"模板ID\",\"column_type\":\"bigint\",\"default_value\":null,\"is_pk\":2,\"is_required\":true,\"is_insert\":false,\"is_edit\":false,\"is_list\":false,\"is_query\":false,\"is_sort\":false,\"query_type\":\"eq\",\"view_type\":\"input\",\"dict_type\":null,\"allow_roles\":null,\"options\":null,\"sort\":8,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-28 14:45:25\",\"update_time\":\"2025-07-28 14:45:25\"},{\"id\":12,\"table_id\":2,\"column_name\":\"title\",\"column_comment\":\"优惠券标题\",\"column_type\":\"varchar\",\"default_value\":null,\"is_pk\":1,\"is_required\":true,\"is_insert\":true,\"is_edit\":true,\"is_list\":true,\"is_query\":true,\"is_sort\":false,\"query_type\":\"like\",\"view_type\":\"input\",\"dict_type\":null,\"allow_roles\":null,\"options\":null,\"sort\":7,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-28 14:45:25\",\"update_time\":\"2025-07-28 14:45:25\"},{\"id\":13,\"table_id\":2,\"column_name\":\"type\",\"column_comment\":\"优惠券类型\",\"column_type\":\"tinyint\",\"default_value\":\"1\",\"is_pk\":1,\"is_required\":true,\"is_insert\":true,\"is_edit\":true,\"is_list\":true,\"is_query\":true,\"is_sort\":false,\"query_type\":\"eq\",\"view_type\":\"input\",\"dict_type\":null,\"allow_roles\":null,\"options\":null,\"sort\":6,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-28 14:45:25\",\"update_time\":\"2025-07-28 14:45:25\"},{\"id\":14,\"table_id\":2,\"column_name\":\"amount\",\"column_comment\":\"优惠金额\",\"column_type\":\"decimal\",\"default_value\":\"0.00\",\"is_pk\":1,\"is_required\":true,\"is_insert\":true,\"is_edit\":true,\"is_list\":true,\"is_query\":false,\"is_sort\":false,\"query_type\":\"eq\",\"view_type\":\"input\",\"dict_type\":null,\"allow_roles\":null,\"options\":null,\"sort\":5,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-28 14:45:25\",\"update_time\":\"2025-07-28 14:45:25\"},{\"id\":15,\"table_id\":2,\"column_name\":\"min_amount\",\"column_comment\":\"满减门槛金额\",\"column_type\":\"decimal\",\"default_value\":\"0.00\",\"is_pk\":1,\"is_required\":true,\"is_insert\":true,\"is_edit\":true,\"is_list\":true,\"is_query\":false,\"is_sort\":false,\"query_type\":\"eq\",\"view_type\":\"input\",\"dict_type\":null,\"allow_roles\":null,\"options\":null,\"sort\":4,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-28 14:45:25\",\"update_time\":\"2025-07-28 14:45:25\"},{\"id\":16,\"table_id\":2,\"column_name\":\"valid_days\",\"column_comment\":\"有效天数\",\"column_type\":\"int\",\"default_value\":null,\"is_pk\":1,\"is_required\":true,\"is_insert\":true,\"is_edit\":true,\"is_list\":true,\"is_query\":false,\"is_sort\":false,\"query_type\":\"eq\",\"view_type\":\"input\",\"dict_type\":null,\"allow_roles\":null,\"options\":null,\"sort\":3,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-28 14:45:25\",\"update_time\":\"2025-07-28 14:45:25\"},{\"id\":17,\"table_id\":2,\"column_name\":\"created_time\",\"column_comment\":\"创建时间\",\"column_type\":\"datetime\",\"default_value\":\"CURRENT_TIMESTAMP\",\"is_pk\":1,\"is_required\":true,\"is_insert\":false,\"is_edit\":true,\"is_list\":true,\"is_query\":false,\"is_sort\":false,\"query_type\":\"between\",\"view_type\":\"date\",\"dict_type\":null,\"allow_roles\":null,\"options\":{\"mode\":\"date\",\"showTime\":true},\"sort\":2,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-28 14:45:25\",\"update_time\":\"2025-07-28 14:45:25\"},{\"id\":18,\"table_id\":2,\"column_name\":\"updated_time\",\"column_comment\":\"更新时间\",\"column_type\":\"datetime\",\"default_value\":\"CURRENT_TIMESTAMP\",\"is_pk\":1,\"is_required\":true,\"is_insert\":false,\"is_edit\":true,\"is_list\":true,\"is_query\":false,\"is_sort\":false,\"query_type\":\"between\",\"view_type\":\"date\",\"dict_type\":null,\"allow_roles\":null,\"options\":{\"mode\":\"date\",\"showTime\":true},\"sort\":1,\"remark\":null,\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-28 14:45:25\",\"update_time\":\"2025-07-28 14:45:25\"}],\"table_name\":\"sa_coupon_template\",\"table_comment\":\"优惠券模板表\",\"stub\":\"saiadmin\",\"template\":\"app\",\"namespace\":\"CouponTemplate\",\"package_name\":\"\",\"business_name\":\"template\",\"class_name\":\"CouponTemplate\",\"menu_name\":\"优惠券模板表\",\"belong_menu_id\":0,\"tpl_category\":\"single\",\"generate_type\":1,\"generate_path\":\"saiadmin-vue\",\"generate_model\":1,\"build_menu\":1,\"component_type\":1,\"options\":{\"relations\":[]},\"form_width\":600,\"is_full\":1,\"remark\":null,\"source\":\"mysql\",\"created_by\":1,\"updated_by\":1,\"create_time\":\"2025-07-28 14:45:25\",\"update_time\":\"2025-07-28 14:45:25\"}', NULL, 1, 1, '2025-07-28 14:46:22', '2025-07-28 14:46:22', NULL);
+INSERT INTO `sa_system_oper_log` VALUES (37, 'admin', 'saiadmin', 'POST', '/tool/code/generate', '未命名业务', '172.18.0.1', '内网IP', '{\"ids\":[\"2\"]}', NULL, 1, 1, '2025-07-28 14:46:26', '2025-07-28 14:46:26', NULL);
 
 -- ----------------------------
 -- Table structure for sa_system_post
@@ -759,7 +979,7 @@ CREATE TABLE `sa_system_user`  (
 -- ----------------------------
 -- Records of sa_system_user
 -- ----------------------------
-INSERT INTO `sa_system_user` VALUES (1, 'admin', '$2y$10$sY/4StKVV.N/8Ock8J8kdeIOK4jS4tAUoYjkzvB8Tzy0fLh.wA2KS', '100', '祭道之上', '13888888888', 'admin@admin.com', 'https://image.saithink.top/saiadmin/avatar.jpg', 'Today is a very good day！', 'statistics', 0, 1, '127.0.0.1', '2025-04-30 13:58:38', '{\"mode\":\"light\",\"tag\":true,\"menuCollapse\":false,\"menuWidth\":230,\"layout\":\"classic\",\"skin\":\"mine\",\"i18n\":false,\"language\":\"zh_CN\",\"animation\":\"ma-slide-down\",\"color\":\"#7166F0\",\"waterMark\":false,\"waterContent\":\"saiadmin\",\"ws\":false,\"round\":true}', NULL, 1, 1, '2024-01-20 16:02:23', '2025-04-30 13:58:38', NULL);
+INSERT INTO `sa_system_user` VALUES (1, 'admin', '$2y$10$sY/4StKVV.N/8Ock8J8kdeIOK4jS4tAUoYjkzvB8Tzy0fLh.wA2KS', '100', '祭道之上', '13888888888', 'admin@admin.com', 'https://image.saithink.top/saiadmin/avatar.jpg', 'Today is a very good day！', 'statistics', 0, 1, '172.18.0.1', '2025-07-28 16:22:58', '{\"mode\":\"light\",\"tag\":true,\"menuCollapse\":false,\"menuWidth\":230,\"layout\":\"classic\",\"skin\":\"mine\",\"i18n\":false,\"language\":\"zh_CN\",\"animation\":\"ma-slide-down\",\"color\":\"#7166F0\",\"waterMark\":false,\"waterContent\":\"saiadmin\",\"ws\":false,\"round\":true}', NULL, 1, 1, '2024-01-20 16:02:23', '2025-07-28 16:22:59', NULL);
 INSERT INTO `sa_system_user` VALUES (2, 'test1', '$2y$10$Q70WC9RBqMSS72DmppsbIuQtyAydXSmeD.Ae6W8YhmE/w15uLLpiy', '100', '小小测试员', '15822222222', 'test1@saadmin.com', 'http://127.0.0.1:8787/storage/20250428/7ece61225ffe6cc374a58add56f0e8e80b03fa09.jpg', NULL, 'statistics', 2, 1, '127.0.0.1', '2025-04-29 17:04:09', 'null', 'test', 1, 1, '2024-07-31 09:34:31', '2025-04-30 13:58:56', NULL);
 INSERT INTO `sa_system_user` VALUES (3, 'test2', '$2y$10$Q70WC9RBqMSS72DmppsbIuQtyAydXSmeD.Ae6W8YhmE/w15uLLpiy', '100', '酱油党', '13977777777', 'test2@saadmin.com', 'http://127.0.0.1:8787/storage/20250315/0f15984b5dad6149dca2a6b8b64b83f76863788e.png', NULL, 'work', 4, 1, '127.0.0.1', '2025-04-28 15:37:30', 'null', 'test', 1, 2, '2024-07-31 09:34:31', '2025-04-28 15:37:30', NULL);
 
@@ -844,12 +1064,26 @@ CREATE TABLE `sa_tool_crontab_log`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `delete_time` datetime NULL DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '定时任务执行日志表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '定时任务执行日志表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sa_tool_crontab_log
 -- ----------------------------
 INSERT INTO `sa_tool_crontab_log` VALUES (1, 2, '登录gitee', 'https://gitee.com/check_user_login', '{\"user_login\": \"saiadmin\"}', 'cURL error 28: Connection timed out after 5000 milliseconds (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for https://gitee.com/check_user_login', 2, '2025-06-05 10:00:09', '2025-06-05 10:00:09', NULL);
+INSERT INTO `sa_tool_crontab_log` VALUES (2, 2, '登录gitee', 'https://gitee.com/check_user_login', '{\"user_login\": \"saiadmin\"}', '{\"result\":1,\"failed_count\":1}', 1, '2025-07-18 10:00:01', '2025-07-18 10:00:01', NULL);
+INSERT INTO `sa_tool_crontab_log` VALUES (3, 3, '定时执行任务', '\\plugin\\saiadmin\\process\\Task', '{\"type\":\"1\"}', NULL, 1, '2025-07-18 12:30:00', '2025-07-18 12:30:00', NULL);
+INSERT INTO `sa_tool_crontab_log` VALUES (4, 2, '登录gitee', 'https://gitee.com/check_user_login', '{\"user_login\": \"saiadmin\"}', '{\"result\":1,\"failed_count\":1}', 1, '2025-07-21 10:00:02', '2025-07-21 10:00:02', NULL);
+INSERT INTO `sa_tool_crontab_log` VALUES (5, 3, '定时执行任务', '\\plugin\\saiadmin\\process\\Task', '{\"type\":\"1\"}', NULL, 1, '2025-07-21 12:30:00', '2025-07-21 12:30:00', NULL);
+INSERT INTO `sa_tool_crontab_log` VALUES (6, 2, '登录gitee', 'https://gitee.com/check_user_login', '{\"user_login\": \"saiadmin\"}', '{\"result\":1,\"failed_count\":1}', 1, '2025-07-22 10:00:03', '2025-07-22 10:00:03', NULL);
+INSERT INTO `sa_tool_crontab_log` VALUES (7, 3, '定时执行任务', '\\plugin\\saiadmin\\process\\Task', '{\"type\":\"1\"}', NULL, 1, '2025-07-22 12:30:01', '2025-07-22 12:30:01', NULL);
+INSERT INTO `sa_tool_crontab_log` VALUES (8, 2, '登录gitee', 'https://gitee.com/check_user_login', '{\"user_login\": \"saiadmin\"}', '{\"result\":1,\"failed_count\":1}', 1, '2025-07-23 10:00:02', '2025-07-23 10:00:02', NULL);
+INSERT INTO `sa_tool_crontab_log` VALUES (9, 3, '定时执行任务', '\\plugin\\saiadmin\\process\\Task', '{\"type\":\"1\"}', NULL, 1, '2025-07-23 12:30:01', '2025-07-23 12:30:01', NULL);
+INSERT INTO `sa_tool_crontab_log` VALUES (10, 2, '登录gitee', 'https://gitee.com/check_user_login', '{\"user_login\": \"saiadmin\"}', '{\"result\":1,\"failed_count\":1}', 1, '2025-07-24 10:00:02', '2025-07-24 10:00:02', NULL);
+INSERT INTO `sa_tool_crontab_log` VALUES (11, 3, '定时执行任务', '\\plugin\\saiadmin\\process\\Task', '{\"type\":\"1\"}', NULL, 1, '2025-07-24 12:30:01', '2025-07-24 12:30:01', NULL);
+INSERT INTO `sa_tool_crontab_log` VALUES (12, 2, '登录gitee', 'https://gitee.com/check_user_login', '{\"user_login\": \"saiadmin\"}', '{\"result\":1,\"failed_count\":1}', 1, '2025-07-25 10:00:02', '2025-07-25 10:00:02', NULL);
+INSERT INTO `sa_tool_crontab_log` VALUES (13, 3, '定时执行任务', '\\plugin\\saiadmin\\process\\Task', '{\"type\":\"1\"}', NULL, 1, '2025-07-25 12:30:01', '2025-07-25 12:30:01', NULL);
+INSERT INTO `sa_tool_crontab_log` VALUES (14, 2, '登录gitee', 'https://gitee.com/check_user_login', '{\"user_login\": \"saiadmin\"}', '{\"result\":1,\"failed_count\":1}', 1, '2025-07-28 10:00:02', '2025-07-28 10:00:02', NULL);
+INSERT INTO `sa_tool_crontab_log` VALUES (15, 3, '定时执行任务', '\\plugin\\saiadmin\\process\\Task', '{\"type\":\"1\"}', NULL, 1, '2025-07-28 12:30:01', '2025-07-28 12:30:01', NULL);
 
 -- ----------------------------
 -- Table structure for sa_tool_generate_columns
@@ -882,11 +1116,29 @@ CREATE TABLE `sa_tool_generate_columns`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `delete_time` datetime NULL DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '代码生成业务字段表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '代码生成业务字段表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sa_tool_generate_columns
 -- ----------------------------
+INSERT INTO `sa_tool_generate_columns` VALUES (1, 1, 'id', 'ID', 'int', NULL, 2, 2, 1, 1, 1, 1, 1, 'eq', 'input', NULL, NULL, NULL, 10, NULL, 1, 1, '2025-07-18 10:52:09', '2025-07-18 10:53:52', NULL);
+INSERT INTO `sa_tool_generate_columns` VALUES (2, 1, 'type', '选项类型', 'varchar', NULL, 1, 2, 1, 1, 1, 2, 1, 'eq', 'saSelect', 'print_option_type', NULL, NULL, 9, NULL, 1, 1, '2025-07-18 10:52:09', '2025-07-18 10:53:52', NULL);
+INSERT INTO `sa_tool_generate_columns` VALUES (3, 1, 'name', '选项名称', 'varchar', NULL, 1, 2, 2, 2, 2, 2, 1, 'like', 'input', NULL, NULL, NULL, 8, NULL, 1, 1, '2025-07-18 10:52:09', '2025-07-18 10:53:52', NULL);
+INSERT INTO `sa_tool_generate_columns` VALUES (4, 1, 'value', '选项值', 'varchar', NULL, 1, 2, 2, 2, 2, 1, 1, 'eq', 'input', NULL, NULL, NULL, 7, NULL, 1, 1, '2025-07-18 10:52:09', '2025-07-18 10:53:52', NULL);
+INSERT INTO `sa_tool_generate_columns` VALUES (5, 1, 'price', '价格', 'decimal', '0.00', 1, 2, 2, 2, 2, 1, 1, 'eq', 'input', NULL, NULL, NULL, 6, NULL, 1, 1, '2025-07-18 10:52:09', '2025-07-18 10:53:52', NULL);
+INSERT INTO `sa_tool_generate_columns` VALUES (6, 1, 'sort', '排序', 'int', '0', 1, 2, 2, 2, 2, 1, 1, 'eq', 'input', NULL, NULL, NULL, 5, NULL, 1, 1, '2025-07-18 10:52:09', '2025-07-18 10:53:52', NULL);
+INSERT INTO `sa_tool_generate_columns` VALUES (7, 1, 'is_default', '是否默认', 'tinyint', '0', 1, 2, 2, 2, 2, 1, 1, 'eq', 'saSelect', 'yes_or_no', NULL, NULL, 4, NULL, 1, 1, '2025-07-18 10:52:09', '2025-07-18 10:53:52', NULL);
+INSERT INTO `sa_tool_generate_columns` VALUES (8, 1, 'status', '状态', 'tinyint', '0', 1, 2, 2, 2, 2, 1, 1, 'eq', 'saSelect', 'yes_no', NULL, NULL, 3, NULL, 1, 1, '2025-07-18 10:52:09', '2025-07-18 10:53:52', NULL);
+INSERT INTO `sa_tool_generate_columns` VALUES (9, 1, 'create_time', '创建时间', 'datetime', NULL, 1, 1, 1, 1, 1, 2, 1, 'between', 'date', NULL, NULL, '{\"mode\":\"date\",\"showTime\":true}', 2, NULL, 1, 1, '2025-07-18 10:52:09', '2025-07-18 10:53:52', NULL);
+INSERT INTO `sa_tool_generate_columns` VALUES (10, 1, 'update_time', '更新时间', 'datetime', NULL, 1, 1, 1, 1, 1, 1, 1, 'between', 'date', NULL, NULL, '{\"mode\":\"date\",\"showTime\":true}', 1, NULL, 1, 1, '2025-07-18 10:52:09', '2025-07-18 10:53:52', NULL);
+INSERT INTO `sa_tool_generate_columns` VALUES (11, 2, 'id', '模板ID', 'bigint', NULL, 2, 2, 1, 1, 1, 1, 1, 'eq', 'input', NULL, NULL, NULL, 8, NULL, 1, 1, '2025-07-28 14:45:25', '2025-07-28 14:46:23', NULL);
+INSERT INTO `sa_tool_generate_columns` VALUES (12, 2, 'title', '优惠券标题', 'varchar', NULL, 1, 2, 2, 2, 2, 2, 1, 'like', 'input', NULL, NULL, NULL, 7, NULL, 1, 1, '2025-07-28 14:45:25', '2025-07-28 14:46:23', NULL);
+INSERT INTO `sa_tool_generate_columns` VALUES (13, 2, 'type', '优惠券类型', 'tinyint', '1', 1, 2, 2, 2, 2, 2, 1, 'eq', 'input', NULL, NULL, NULL, 6, NULL, 1, 1, '2025-07-28 14:45:25', '2025-07-28 14:46:23', NULL);
+INSERT INTO `sa_tool_generate_columns` VALUES (14, 2, 'amount', '优惠金额', 'decimal', '0.00', 1, 2, 2, 2, 2, 1, 1, 'eq', 'input', NULL, NULL, NULL, 5, NULL, 1, 1, '2025-07-28 14:45:25', '2025-07-28 14:46:23', NULL);
+INSERT INTO `sa_tool_generate_columns` VALUES (15, 2, 'min_amount', '满减门槛金额', 'decimal', '0.00', 1, 2, 2, 2, 2, 1, 1, 'eq', 'input', NULL, NULL, NULL, 4, NULL, 1, 1, '2025-07-28 14:45:25', '2025-07-28 14:46:23', NULL);
+INSERT INTO `sa_tool_generate_columns` VALUES (16, 2, 'valid_days', '有效天数', 'int', NULL, 1, 2, 2, 2, 2, 1, 1, 'eq', 'input', NULL, NULL, NULL, 3, NULL, 1, 1, '2025-07-28 14:45:25', '2025-07-28 14:46:23', NULL);
+INSERT INTO `sa_tool_generate_columns` VALUES (17, 2, 'created_time', '创建时间', 'datetime', 'CURRENT_TIMESTAMP', 1, 2, 1, 2, 2, 1, 1, 'between', 'date', NULL, NULL, '{\"mode\":\"date\",\"showTime\":true}', 2, NULL, 1, 1, '2025-07-28 14:45:25', '2025-07-28 14:46:23', NULL);
+INSERT INTO `sa_tool_generate_columns` VALUES (18, 2, 'updated_time', '更新时间', 'datetime', 'CURRENT_TIMESTAMP', 1, 2, 1, 2, 2, 1, 1, 'between', 'date', NULL, NULL, '{\"mode\":\"date\",\"showTime\":true}', 1, NULL, 1, 1, '2025-07-28 14:45:25', '2025-07-28 14:46:23', NULL);
 
 -- ----------------------------
 -- Table structure for sa_tool_generate_tables
@@ -922,11 +1174,13 @@ CREATE TABLE `sa_tool_generate_tables`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `delete_time` datetime NULL DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '代码生成业务表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '代码生成业务表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sa_tool_generate_tables
 -- ----------------------------
+INSERT INTO `sa_tool_generate_tables` VALUES (1, 'sa_print_setting', '打印设置表', 'saiadmin', 'app', 'printSetting', '', 'setting', 'PrintSetting', '打印设置', 0, 'single', 1, 'saiadmin-vue', 1, 'index,save,update,read,delete', 1, 1, '{\"relations\":[]}', 600, 1, NULL, 'mysql', 1, 1, '2025-07-18 10:52:09', '2025-07-18 10:53:52', NULL);
+INSERT INTO `sa_tool_generate_tables` VALUES (2, 'sa_coupon_template', '优惠券模板表', 'saiadmin', 'app', 'CouponTemplate', '', 'template', 'CouponTemplate', '优惠券模板表', 0, 'single', 1, 'saiadmin-vue', 1, 'index,save,update,read,delete', 1, 1, '{\"relations\":[]}', 600, 1, NULL, 'mysql', 1, 1, '2025-07-28 14:45:25', '2025-07-28 14:46:23', NULL);
 
 -- ----------------------------
 -- Table structure for sa_user
@@ -952,6 +1206,81 @@ CREATE TABLE `sa_user`  (
 INSERT INTO `sa_user` VALUES (1, '测试用户', '', '17047868545', '$argon2id$v=19$m=65536,t=4,p=1$UUFVRkZGYWF2WFFmVzdYcQ$TDthdipEbeJSCJdsKp06X8GtYDIyzt1WatZpi7ybkdo', 0, 0, '2025-06-05 11:03:51', '2025-06-05 11:03:51', NULL);
 
 -- ----------------------------
+-- Table structure for sa_user_address
+-- ----------------------------
+DROP TABLE IF EXISTS `sa_user_address`;
+CREATE TABLE `sa_user_address`  (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` int UNSIGNED NOT NULL COMMENT '用户ID',
+  `consignee` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '收货人',
+  `mobile` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '联系人',
+  `region` json NOT NULL COMMENT '收货地址',
+  `is_default` tinyint UNSIGNED NULL DEFAULT 1 COMMENT '是否默认:0=否,1=默认',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '添加时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `idx_id`(`id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户收货地址' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sa_user_address
+-- ----------------------------
+INSERT INTO `sa_user_address` VALUES (2, 1, '张三', '13333333325', '{\"city\": \"西安市\", \"detail\": \"龙腾路与龙首中路交叉口西北方向100米左右 宫园壹号1期\", \"district\": \"莲湖区\", \"province\": \"陕西省\"}', 0, '2025-07-28 10:11:57', '2025-07-28 14:16:16');
+INSERT INTO `sa_user_address` VALUES (3, 1, '1312312', '13333333333', '{\"city\": \"西安市\", \"detail\": \"张家堡街道龙首商业街27号 夜未央创业街区\", \"district\": \"未央区\", \"province\": \"陕西省\"}', 0, '2025-07-28 10:53:15', '2025-07-28 14:15:43');
+INSERT INTO `sa_user_address` VALUES (7, 1, '测试', '13312321312', '{\"city\": \"西安市\", \"detail\": \"未央路27号荣民龙首广场3层 英孚教育青少(龙首校区)\", \"district\": \"莲湖区\", \"province\": \"陕西省\"}', 0, '2025-07-28 10:57:53', '2025-07-28 10:57:53');
+INSERT INTO `sa_user_address` VALUES (8, 1, '李四', '13432424242', '{\"city\": \"乌鲁木齐市\", \"detail\": \"友好南路3号 人民公园\", \"district\": \"沙依巴克区\", \"province\": \"新疆维吾尔自治区\"}', 1, '2025-07-28 14:16:42', '2025-07-28 14:21:27');
+
+-- ----------------------------
+-- Table structure for sa_user_attachment
+-- ----------------------------
+DROP TABLE IF EXISTS `sa_user_attachment`;
+CREATE TABLE `sa_user_attachment`  (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` int UNSIGNED NULL DEFAULT NULL COMMENT '用户ID',
+  `file_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件名',
+  `url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件地址',
+  `status` tinyint UNSIGNED NOT NULL DEFAULT 0 COMMENT '状态:0=正常,1=已使用',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '上传时间',
+  `total` int UNSIGNED NULL DEFAULT 0 COMMENT '总页数',
+  `options` json NULL COMMENT '选项',
+  `selectPage` json NULL COMMENT '用户打印页数',
+  `paperPrice` decimal(10, 2) UNSIGNED NULL DEFAULT 0.00 COMMENT '纸张价格',
+  `totalPrice` decimal(10, 2) UNSIGNED NULL DEFAULT 0.00 COMMENT '总价',
+  `copies` int UNSIGNED NULL DEFAULT 1 COMMENT '份数',
+  `coverTextContent` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '封面内容',
+  `previceImages` json NULL COMMENT '预览图',
+  `uploadImage` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '封面图',
+  `bookNums` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '本数',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户文件表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sa_user_attachment
+-- ----------------------------
+INSERT INTO `sa_user_attachment` VALUES (13, 1, '合作后外部群标准话术_1753696878600_.pdf', '/uploads/合作后外部群标准话术_1753696878600_.pdf', 0, '2025-07-28 18:01:11', 7, '[{\"id\": 1, \"name\": \"A4\", \"type\": \"paperSize\", \"price\": \"0.00\", \"value\": \"A4\", \"max_pages\": 0}, {\"id\": 6, \"name\": \"黑白\", \"type\": \"color\", \"price\": \"0.00\", \"value\": \"black_white\", \"max_pages\": 0}, {\"id\": 10, \"name\": \"双面\", \"type\": \"side\", \"price\": \"1.00\", \"value\": \"double\", \"max_pages\": 0}, {\"id\": 12, \"name\": \"70g\", \"type\": \"paperWeight\", \"price\": \"0.00\", \"value\": \"70\", \"max_pages\": 0}, {\"id\": 14, \"name\": \"骑马钉\", \"type\": \"binding\", \"price\": \"2.00\", \"value\": \"saddle_stitch\", \"max_pages\": 60}, {\"id\": 19, \"name\": \"不缩印\", \"type\": \"multiPage\", \"price\": \"0.00\", \"value\": \"1\", \"max_pages\": 0}, {\"id\": 22, \"name\": \"深蓝\", \"type\": \"coverColor\", \"price\": \"0.00\", \"value\": \"darkBlue\", \"max_pages\": 0}, {\"id\": 23, \"name\": \"纯色封面\", \"type\": \"coverContent\", \"price\": \"0.00\", \"value\": \"plain\", \"max_pages\": 0}, {\"id\": 24, \"name\": \"护眼纸\", \"type\": \"paperType\", \"price\": \"2.00\", \"value\": \"protection\", \"max_pages\": 0}, {\"id\": 25, \"name\": \"铜版纸\", \"type\": \"coverType\", \"price\": \"2.00\", \"value\": \"coated\", \"max_pages\": 0}]', '{\"end\": 7, \"start\": 1}', 2.00, 9.00, 1, NULL, NULL, NULL, '0');
+
+-- ----------------------------
+-- Table structure for sa_user_coupon
+-- ----------------------------
+DROP TABLE IF EXISTS `sa_user_coupon`;
+CREATE TABLE `sa_user_coupon`  (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` int UNSIGNED NULL DEFAULT NULL COMMENT '用户',
+  `coupon_id` int UNSIGNED NULL DEFAULT NULL COMMENT '优惠券ID',
+  `amount` decimal(10, 2) NULL DEFAULT NULL COMMENT '金额',
+  `order_id` int UNSIGNED NULL DEFAULT 0 COMMENT '使用的订单ID',
+  `status` tinyint UNSIGNED NULL DEFAULT 0 COMMENT '状态:0=未使用,1=已使用',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '领取时间',
+  `expire_time` datetime NULL DEFAULT NULL COMMENT '过期时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户优惠券' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sa_user_coupon
+-- ----------------------------
+INSERT INTO `sa_user_coupon` VALUES (2, 1, 1, 5.00, 0, 0, '2025-07-28 16:50:58', '2025-08-04 16:50:57');
+
+-- ----------------------------
 -- Table structure for sa_user_token
 -- ----------------------------
 DROP TABLE IF EXISTS `sa_user_token`;
@@ -963,12 +1292,11 @@ CREATE TABLE `sa_user_token`  (
   `expire_time` datetime NOT NULL COMMENT '过期时间',
   `delete_time` datetime NULL DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sa_user_token
 -- ----------------------------
-INSERT INTO `sa_user_token` VALUES (1, 1, '2fa89689-baaa-4c64-a929-13a50a07866f', '2025-06-05 11:03:51', '2025-06-12 11:03:50', NULL);
-INSERT INTO `sa_user_token` VALUES (2, 1, '03b91a03-ab35-45af-8fea-06f70a397f7d', '2025-06-05 11:08:17', '2025-06-12 11:08:16', NULL);
+INSERT INTO `sa_user_token` VALUES (16, 1, '2a0470c7-90a3-47b4-8e36-7c1ff0c7abe0', '2025-07-28 15:43:44', '2025-08-04 15:43:44', NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;
