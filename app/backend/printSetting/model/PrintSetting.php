@@ -41,4 +41,12 @@ class PrintSetting extends BaseModel
         $query->whereTime('create_time', 'between', $value);
     }
 
+
+    protected $type = [
+        'max_pages' => 'integer',//最大页数
+        'sort'      => 'integer',//排序
+        'status'    => 'integer',//状态
+        'price'     => 'float'//价格
+    ];
+
 }

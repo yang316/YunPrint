@@ -85,22 +85,22 @@ class UserAttachmentController extends BaseController
             if (!empty($whereSQL)) {
                 $sqlWhere = implode(' OR ', $whereSQL);
                 $list = \app\api\model\PrintSetting::whereRaw($sqlWhere, $bindParams)
-                    ->field(['id', 'name', 'value', 'price', 'type'])
+                    ->field(['id', 'name', 'value', 'price', 'type','max_pages'])
                     ->select()
                     ->toArray();
             }
-            //按类型分组
+            //计算价格
+            $selectNums = $params['selectPage']['end']-$params['selectPage']['start']+1;
+            $printPrice = (new UploadController())->calcPrintPrice($list,$params['copies'],$selectNums);
             //查询用户上传文件页数
             $userAttachment = $this->model->where([
                 'user_id' => $this->request->user['id'],
                 'id'      => $params['id']
             ])->find();
             // 返回数组结果
-            $selectNums = $params['selectPage']['end']-$params['selectPage']['start']+1;
-            $paperPrice         = array_sum(array_column($list, 'price')); //纸张单价
-            $totalPrice         = round(round($paperPrice*$selectNums, 2)*$params['copies'],2); //纸张总价
-            $userAttachment->paperPrice = $paperPrice;
-            $userAttachment->totalPrice = $totalPrice;
+            
+            $userAttachment->paperPrice = $printPrice['paperPrice'];
+            $userAttachment->totalPrice = $printPrice['totalPrice'];
             $userAttachment->copies     = $params['copies'];//份数
             $userAttachment->selectPage = $params['selectPage'];//选中页数
             $userAttachment->coverTextContent = $params['coverTextContent'];//封面内容

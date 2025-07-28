@@ -24,6 +24,7 @@ class PrintSettingValidate extends Validate
         'sort' => 'require',
         'is_default' => 'require',
         'status' => 'require',
+        'max_pages' => 'require',
     ];
 
     /**
@@ -37,6 +38,7 @@ class PrintSettingValidate extends Validate
         'sort' => '排序必须填写',
         'is_default' => '是否默认必须填写',
         'status' => '状态必须填写',
+        'max_pages' => '最大页数必须填写',
     ];
 
     /**
@@ -51,6 +53,7 @@ class PrintSettingValidate extends Validate
             'sort',
             'is_default',
             'status',
+            'max_pages',
         ],
         'update' => [
             'type',
@@ -60,6 +63,7 @@ class PrintSettingValidate extends Validate
             'sort',
             'is_default',
             'status',
+            'max_pages',
         ],
     ];
 

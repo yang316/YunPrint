@@ -6,6 +6,7 @@ use app\api\controller\UserAttachmentController;
 use app\api\controller\UploadController;
 use app\api\controller\DocumentController;
 use app\api\controller\OrderController;
+use app\api\controller\CouponTemplateController;
 Route::group('/api', function () {
 
     //用户接口
@@ -64,11 +65,30 @@ Route::group('/api', function () {
     
     Route::group('/order',function (){
         // 创建订单
-        Route::post('/create', [OrderController::class, 'createOrder']);
+        Route::post('/preCalcOrder', [OrderController::class, 'preCalcOrder']);
         //获取订单列表
         Route::get('/getOrderList',[OrderController::class,'getOrderList']);
+        //添加地址
+        Route::post('/addAddress',[OrderController::class,'addAddress']);
+        //修改地址
+        Route::put('/editAddress',[OrderController::class,'addAddress']);
+        //获取地址列表
+        Route::get('/getAddressList',[OrderController::class,'getAddressList']);
+        //删除地址
+        Route::delete('/delAddress',[OrderController::class,'delAddress']);
+    });
+    //优惠券
+    Route::group('/coupon',function (){
+        //获取优惠券列表
+        Route::get('/getCouponList',[CouponTemplateController::class,'getCouponList']);
+        //领取优惠券
+        Route::post('/receiveCoupon',[CouponTemplateController::class,'receiveCoupon']);
     });
 
+    Route::group('/test',function (){
+        //测试
+        // Route::get('/addPrintList1',[UploadController::class,'addPrintList1']);
+    });
 })->middleware([
     \app\api\middleware\Authorize::class,
     \app\api\middleware\AccessControl::class
