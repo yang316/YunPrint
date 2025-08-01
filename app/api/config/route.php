@@ -65,6 +65,8 @@ Route::group('/api', function () {
     
     Route::group('/order',function (){
         // 创建订单
+        Route::post('/createOrder',[OrderController::class,'createOrder']);
+        //计算订单价格
         Route::post('/preCalcOrder', [OrderController::class, 'preCalcOrder']);
         //获取订单列表
         Route::get('/getOrderList',[OrderController::class,'getOrderList']);
@@ -76,6 +78,10 @@ Route::group('/api', function () {
         Route::get('/getAddressList',[OrderController::class,'getAddressList']);
         //删除地址
         Route::delete('/delAddress',[OrderController::class,'delAddress']);
+        //提交订单
+        Route::post('/postOrder',[OrderController::class,'postOrder']);
+        //绑定电子面单账号
+        Route::post('/bindingEaccount',[OrderController::class,'bindingEaccount']);
     });
     //优惠券
     Route::group('/coupon',function (){

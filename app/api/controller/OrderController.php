@@ -7,6 +7,8 @@ use app\api\model\UserAttachment;
 use app\api\model\UserAddress;
 use app\api\validate\OrderValidate;
 use think\db\exception\PDOException;
+use app\api\services\ZtoService;
+use Exception;
 
 /**
  * 订单处理控制器
@@ -36,43 +38,24 @@ class OrderController extends BaseController
         Db::startTrans();
         try {
             $data = $this->validate->scene('create')->failException(true)->checked($this->request->all());
+            // 计算订单价格和生成订单项
+            $order = $this->calcOrderPrice($data['attachment_ids'], $data['coupon_id']);
+            $items = $order['item']; // 获取订单项数据
+            unset($order['items']); // 移除订单项，只保留订单主表数据
 
-            // 创建订单逻辑
-            // 订单数据
-            $attachment = UserAttachment::where(['user_id' => $this->request->user['id']])
-                ->whereIn('id', $data['attachment_ids'])
-                ->field('id,file_name,url,total,options,copies,selectPage,paperPrice,totalPrice')
-                ->select();
-            $items = []; //订单详情
-            $order = [
-                'user_id'       => $this->request->user['id'], //用户ID
-                'order_sn'      => generateOrderNo(), //订单编号
-                'totalPrice'    => 0,
-                'create_time'   => date('Y-m-d H:i:s'),
-                'update_time'   => date('Y-m-d H:i:s'),
-            ]; //订单表
+            // 保存订单主表，获取生成的orderId
+            $this->model->save($order);
+            $orderId = $this->model->id; // 获取自增ID作为orderId
 
-            foreach ($attachment as $v) {
-
-                $items[] = [
-                    'fileName'      => $v['file_name'], //文件名称
-                    'paperPrice'    => $v['paperPrice'], //纸张价格
-                    'totalPrice'    => $v['totalPrice'], //总价格
-                    'totalPage'     => $v['selectPage']['end'] - $v['selectPage']['start'] + 1, //打印的页数
-                    'copies'        => $v['copies'], //份数
-                    'atta_id'       => $v['id'], //附件ID
-                    'options'       => json_encode($v['options'], JSON_UNESCAPED_UNICODE), //规格
-                    'create_time'   => date('Y-m-d H:i:s'),
-                    'update_time'   => date('Y-m-d H:i:s'),
-                ];
-                $order['totalPrice'] += $v['totalPrice']; //订单总价
-            }
-            // 计算产品价格拆分订单详情表
-            $orderId = $this->model->insertGetId($order);
+            // 将orderId添加到每个订单项中
             foreach ($items as &$item) {
-                $item['order_id'] = $orderId;
+                $item['order_id'] = $orderId; // 假设订单项表的字段名为order_id
             }
-            \app\api\model\OrderItems::insertAll($items);
+            unset($item); // 解除引用
+
+            // 保存订单项
+            (new \app\api\model\OrderItems)->saveAll($items);
+
             Db::commit();
             return $this->success(['orderId' => $orderId]);
         } catch (\Exception $e) {
@@ -165,7 +148,7 @@ class OrderController extends BaseController
             $list = UserAddress::where(['user_id' => $this->request->user['id']])
                 ->order('id', 'desc')
                 ->field('id,mobile,consignee,region,is_default,create_time,update_time')
-                ->paginate($params['limit'],$params['page']);
+                ->paginate($params['limit'], $params['page']);
             return $this->success(['list' => $list->items(), 'total' => $list->total()]);
         } catch (\Exception $e) {
             return $this->error($e->getMessage());
@@ -219,10 +202,10 @@ class OrderController extends BaseController
     {
         try {
             $data = $this->validate->scene('calc')->failException(true)->checked($this->request->all());
-            $order = $this->calcOrderPrice($data['attachment_ids'],$data['coupon_id']);
+            $order = $this->calcOrderPrice($data['attachment_ids'], $data['coupon_id']);
             // Db::commit();
             return $this->success($order);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
 
             return $this->error($e->getMessage());
         }
@@ -235,76 +218,80 @@ class OrderController extends BaseController
      * @param integer $coupon_id     优惠券ID
      * @return array
      */
-    private function calcOrderPrice( $attachment_ids,$address_id=0,$coupon_id = 0  )
+    private function calcOrderPrice($attachment_ids, $address_id = 0, $coupon_id = 0)
     {
 
-            // 创建订单逻辑
-            // 订单数据
-            $attachment = UserAttachment::where(['user_id' => $this->request->user['id']])
-                ->whereIn('id', $attachment_ids)
-                ->field('id,file_name,url,total,options,copies,selectPage,paperPrice,totalPrice')
-                ->select();
-            $items = []; 
-            //订单
-            $order = [
-                'user_id'       => $this->request->user['id'], //用户ID
-                'order_sn'      => generateOrderNo(), //订单编号
-                'totalPrice'    => 0,
+        // 创建订单逻辑
+        // 订单数据
+        $attachment = UserAttachment::where(['user_id' => $this->request->user['id']])
+            ->whereIn('id', $attachment_ids)
+            ->field('id,file_name,url,total,options,copies,selectPage,paperPrice,totalPrice')
+            ->select();
+        if ($attachment->isEmpty()) {
+            throw new \Exception('附件不存在');
+        }
+        $items = [];
+        //订单
+        $order = [
+            'user_id'       => $this->request->user['id'], //用户ID
+            'order_sn'      => generateOrderNo(), //订单编号
+            'totalPrice'    => 0,
+            'create_time'   => date('Y-m-d H:i:s'),
+            'update_time'   => date('Y-m-d H:i:s'),
+            'couponPrice'   => 0,
+            'postage'       => 0,
+            'couponPrice'   => 0,
+        ];
+        //订单详情
+        foreach ($attachment as $v) {
+
+            $items[] = [
+                'fileName'      => $v['file_name'], //文件名称
+                'paperPrice'    => $v['paperPrice'], //纸张价格
+                'totalPrice'    => $v['totalPrice'], //总价格
+                'totalPage'     => $v['selectPage']['end'] - $v['selectPage']['start'] + 1, //打印的页数
+                'copies'        => $v['copies'], //份数
+                'atta_id'       => $v['id'], //附件ID
+                'options'       => $v['options'], //规格
                 'create_time'   => date('Y-m-d H:i:s'),
                 'update_time'   => date('Y-m-d H:i:s'),
-                'couponPrice'   => 0,
             ];
-             //订单详情
-            foreach ($attachment as $v) {
-
-                $items[] = [
-                    'fileName'      => $v['file_name'], //文件名称
-                    'paperPrice'    => $v['paperPrice'], //纸张价格
-                    'totalPrice'    => $v['totalPrice'], //总价格
-                    'totalPage'     => $v['selectPage']['end'] - $v['selectPage']['start'] + 1, //打印的页数
-                    'copies'        => $v['copies'], //份数
-                    'atta_id'       => $v['id'], //附件ID
-                    'options'       => $v['options'], //规格
-                    'create_time'   => date('Y-m-d H:i:s'),
-                    'update_time'   => date('Y-m-d H:i:s'),
-                ];
-                $order['totalPrice'] += $v['totalPrice']; //订单总价
-            }
+            $order['totalPrice'] += $v['totalPrice']; //订单总价
+        }
+        //邮费计算
+        if ($address_id) {
             //邮费计算
-            if( $address_id ){
-                //邮费计算
-                $order['postage'] = $this->postPrice($address_id,$order['totalPrice']);
-                $order['totalPrice'] = round($order['totalPrice'] + $order['postage'],2);
-            } 
-            //优惠券计算
-            if( $coupon_id ){
-                $order['couponPrice'] = $this->postPrice($address_id,$order['totalPrice']);
-                $order['totalPrice'] = round($order['totalPrice'] - $order['couponPrice'],2);
-            }
-            
-            $order['item'] = $items;
-            return $order;
+            $order['postage'] = $this->postPrice($address_id, $order['totalPrice']);
+            $order['totalPrice'] = round($order['totalPrice'] + $order['postage'], 2);
+        }
+        //优惠券计算
+        if ($coupon_id) {
+            $order['couponPrice'] = $this->postPrice($address_id, $order['totalPrice']);
+            $order['totalPrice'] = round($order['totalPrice'] - $order['couponPrice'], 2);
+        }
+        $order['item'] = $items;
+        return $order;
     }
 
 
     /**
      * 邮费计算
      */
-    public function postPrice($address_id,$price )
+    public function postPrice($address_id, $price)
     {
         //满20新疆全疆包邮 小于20运费8元
-        $address = UserAddress::where(['id'=>$address_id])->find();
-        if( !$address ){
-           return 0;
+        $address = UserAddress::where(['id' => $address_id])->find();
+        if (!$address) {
+            return 0;
         }
-        
-        if( $address['region']['province'] == '新疆维吾尔自治区' ){
-            if( $price >=20 ){
+
+        if ($address['region']['province'] == '新疆维吾尔自治区') {
+            if ($price >= 20) {
                 return 0;
-            }else{
+            } else {
                 return 8;
             }
-        }else{
+        } else {
             return 20;
         }
     }
@@ -312,31 +299,65 @@ class OrderController extends BaseController
     /**
      * 优惠券金额计算
      */
-    public function couponPrice($coupon_id,$price)
+    public function couponPrice($coupon_id, $price)
     {
         //判断优惠券是否存在
         $coupon = \app\api\model\UserCoupon::alias('uc')
-            ->join('coupon_template ct','ct.id = uc.coupon_id','left')
+            ->join('coupon_template ct', 'ct.id = uc.coupon_id', 'left')
             ->where([
                 'uc.user_id'   => $this->request->user['id'],
                 'uc.id'        => $coupon_id,
                 'uc.status'    => 1,
             ])
-            ->field(['uc.amount','ct.min_amount','uc.expire_time','uc.status'])
+            ->field(['uc.amount', 'ct.min_amount', 'uc.expire_time', 'uc.status'])
             ->find();
-        if( $coupon['status'] != 1 ){
-           throw new \Exception('优惠券不存在');
+        if ($coupon['status'] == 1) {
+            throw new \Exception('优惠券已使用');
         }
-        if( $price < $coupon['min_amount'] ){
+        if ($price < $coupon['min_amount']) {
             throw new \Exception('订单金额不足');
         }
-        if( $coupon['expire_time'] < time() ){
+        if ($coupon['expire_time'] < time()) {
             throw new \Exception('优惠券已过期');
         }
+    }
 
+    /**
+     * 中通快递下电子面单
+     *
+     * @return void
+     */
+    public function postOrder()
+    {
+        $ztoService = new ZtoService('4dd8ab0331ac8b4785cc3','6600ba18908d597ce18d6020ccfe13df',true);
+        $result = $ztoService->createOrder();
+        //$result
+        //[
+        //   "result" => array:8 [
+        //     "bigMarkInfo" => null
+        //     "siteCode" => "02100"
+        //     "verifyCode" => null
+        //     "signBillInfo" => null
+        //     "siteName" => "上海"
+        //     "billCode" => "73100199662515"
+        //     "orderCode" => "250801000009773102"
+        //     "partnerOrderCode" => "msyy1754041321"
+        //   ]
+        //   "message" => ""
+        //   "status" => true
+        //   "statusCode" => null
+        //]
+        if( $result['status'] && $result['statusCode'] ){
+            return $result['result'];
+        }
+        throw new Exception($result['message']);
+    }
+
+
+    public function bindingEaccount()
+    {
+        $ztoService = new ZtoService('4dd8ab0331ac8b4785cc3','6600ba18908d597ce18d6020ccfe13df',true);
+        $result = $ztoService->getBaseOrganizeByFullNameGateway();
+        d($result);
     }
 }
-
-
-
-

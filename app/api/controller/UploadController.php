@@ -82,9 +82,10 @@ class UploadController extends BaseController
 
         //价格
         $printPrice = $this->calcPrintPrice($printSetting,1,$totalPage);
-        $totalPrice = $printPrice['totalPrice'];
-        $bookNums =   $printPrice['bookNums'];
-        $paperPrice = $printPrice['paperPrice'];
+        // $totalPrice = $printPrice['totalPrice'];
+        // $bookNums =   $printPrice['bookNums'];
+        // $paperPrice = $printPrice['paperPrice'];
+        // $coverPrice = $printPrice['coverPrice'];
         //选定页数
         $selectPage = ['start'=>1,'end'=>$totalPage];
         //保存数据
@@ -95,10 +96,11 @@ class UploadController extends BaseController
             'total'             => $totalPage,
             'options'           => $printSetting,
             'selectPage'        => $selectPage,
-            'paperPrice'        => $paperPrice,
-            'totalPrice'        => $totalPrice,
+            'paperPrice'        => $printPrice['paperPrice'],
+            'totalPrice'        => $printPrice['totalPrice'],
             'copies'            => 1,
-            'bookNums'          => $bookNums,
+            'bookNums'          => $printPrice['bookNums'],
+            'coverPrice'        => $printPrice['coverPrice'],
         ]);
         if (!$result) {
             return ['status' => 'fail', 'msg' => '添加到打印列表失败'];
@@ -108,12 +110,14 @@ class UploadController extends BaseController
             'status'    => 'success',
             'msg'       => '添加到打印列表成功',
             'data'      => [
-                'paperPrice'    =>  $paperPrice,
-                'totalPrice'    =>  $totalPrice,
+                'paperPrice'    =>  $printPrice['paperPrice'],
+                'totalPrice'    =>  $printPrice['totalPrice'],
                 'totalPage'     =>  $totalPage,
                 'options'       =>  $printSetting,
                 'selectPage'    =>  $selectPage,
                 'copies'        =>  1,
+                'bookNums'      =>  $printPrice['bookNums'],
+                'coverPrice'    =>  $printPrice['coverPrice'],
             ]
         ];
     }
@@ -155,7 +159,7 @@ class UploadController extends BaseController
         
         //计算实际打印页数（考虑单双面）
         $actualPages = $sideType == 'single' ? $totalPage : ceil($totalPage / 2);
-        
+        // d($priceOptions);
         //计算装订本数和装订价格
         $bindingPrice = 0;
         switch($binding){
@@ -167,54 +171,60 @@ class UploadController extends BaseController
             case 'steel':
                 if($actualPages <= 600) {
                     $bookNums = 1;
-                    $bindingPrice = 5;
+                    $bindingPrice = $priceOptions['binding']['price'];
                 } else if($actualPages <= 800) {
                     $bookNums = 1;
-                    $bindingPrice = 6; //5+1
+                    $bindingPrice = $priceOptions['binding']['price'] + 1; //5+1
                 } else if($actualPages <= 1000) {
                     $bookNums = 1;
-                    $bindingPrice = 7; //5+2
+                    $bindingPrice = $priceOptions['binding']['price'] + 2; //5+2
                 } else {
                     $bookNums = ceil($actualPages / 1000);
-                    $bindingPrice = 5 * $bookNums;
+                    $bindingPrice = $priceOptions['binding']['price'] * $bookNums;
                 }
                 break;
             //平订 最多200页 超200页 分成每200页一本平订，每本价格0.2元
             case 'staple':
                 $bookNums = max(1, ceil($actualPages / 200));
-                $bindingPrice = 0.2 * $bookNums;
+                $bindingPrice = $priceOptions['binding']['price'] * $bookNums;
                 break;
             //皮纹纸胶装 超600页 +1元 超800页+2元 超1000页分2本 每本价格3元
             case 'textured_binding':
                 if($actualPages <= 600) {
                     $bookNums = 1;
-                    $bindingPrice = 3;
+                    $bindingPrice = $priceOptions['binding']['price'];
                 } else if($actualPages <= 800) {
                     $bookNums = 1;
-                    $bindingPrice = 4; //3+1
+                    $bindingPrice = $priceOptions['binding']['price'] + 1; //3+1
                 } else if($actualPages <= 1000) {
                     $bookNums = 1;
-                    $bindingPrice = 5; //3+2
+                    $bindingPrice = $priceOptions['binding']['price'] + 2; //3+2
                 } else {
                     $bookNums = ceil($actualPages / 1000);
-                    $bindingPrice = 3 * $bookNums;
+                    $bindingPrice = $priceOptions['binding']['price'] * $bookNums;
                 }
                 break;
             //铁圈最多220页 每本价格5元
             case 'wire_binding':
                 $bookNums = max(1, ceil($actualPages / 220));
-                $bindingPrice = 5 * $bookNums;
+                $bindingPrice = $priceOptions['binding']['price'] * $bookNums;
                 break;
             //骑马钉 最多60页 每本价格1元
             case 'saddle_stitch':
                 $bookNums = max(1, ceil($actualPages / 60));
-                $bindingPrice = 1 * $bookNums;
+                $bindingPrice = $priceOptions['binding']['price'] * $bookNums;
                 break;
 
         }
-        
-        //总价格计算：(纸张价格 * 实际页数 * 份数) + (装订价格 * 本数 * 份数)
-        $totalPrice = round(($paperPrice * $actualPages * $copies) + ($bindingPrice * $bookNums * $copies), 2);
-        return ['totalPrice'=>$totalPrice,'bookNums'=>$bookNums,'bindingPrice'=>$bindingPrice,'paperPrice'=>$paperPrice];
+        //封面价格
+        $coverPrice = 0;
+        if($coverType == 'none'){
+            $coverPrice = 0;
+        } else {
+            $coverPrice = $priceOptions['coverType']['price'] * $bookNums * $copies;
+        }
+        //总价格计算：(纸张价格 * 实际页数 * 份数) + (装订价格 * 本数 * 份数) + (封面价格 * 本数 * 份数)
+        $totalPrice = round(($paperPrice * $actualPages * $copies) + ($bindingPrice  * $copies) + $coverPrice, 2);
+        return ['totalPrice'=>$totalPrice,'bookNums'=>$bookNums,'bindingPrice'=>$bindingPrice,'paperPrice'=>$paperPrice,'coverPrice'=>$coverPrice];
     }
 }

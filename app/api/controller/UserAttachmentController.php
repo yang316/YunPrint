@@ -106,6 +106,8 @@ class UserAttachmentController extends BaseController
             $userAttachment->coverTextContent = $params['coverTextContent'];//封面内容
             $userAttachment->options = $list;//选项
             $userAttachment->uploadImage = $params['uploadImage'];//封面图
+            $userAttachment->coverPrice     = $printPrice['coverPrice'];//封面图
+            $userAttachment->bookNums       = $printPrice['bookNums'];// bookNums
             $userAttachment->save();
 
             return $this->success();

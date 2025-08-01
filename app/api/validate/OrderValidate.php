@@ -46,6 +46,7 @@ class OrderValidate extends Validate
 
     // 定义场景
     protected $scene = [
+        'create'            => ['attachment_ids','coupon_id','address_id'],
         'list'              => ['page', 'limit', 'status'],
         'detail'            => ['id'],
         'addAddress'        => ['consignee', 'mobile', 'region', 'is_default'],
